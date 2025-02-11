@@ -21,7 +21,7 @@ done
 
 # Check if the EBS CSI Driver is installed
 echo "🔍 Checking if the AWS EBS CSI Driver is installed in the EKS cluster..."
-if kubectl get deployment -n kube-system | grep -q "ebs-csi-controller"; then
+if kubectl get pods -n kube-system | grep -q "ebs-csi-controller"; then
   echo "✅ EBS CSI Driver is already installed."
 else
   echo "⚠️ EBS CSI Driver is not installed. Proceeding with installation..."

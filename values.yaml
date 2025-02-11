@@ -1216,7 +1216,6 @@ grafana:
     #     httpMethod: POST
     #     tlsSkipVerify: false
     #     sigV4Auth: false
-    #   version: 1
     # - name: Alertmanager-sample
     #   type: prometheus
     #   url: 

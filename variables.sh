@@ -1,7 +1,7 @@
 # variables.sh
 NAMESPACE="monitoring"
 
-CLUSTER_NAME="eks-demo1"         # EKS cluster name
+CLUSTER_NAME="new-cluster"         # EKS cluster name
 LABEL_KEY="type"                  # Label key to filter nodes
 LABEL_VALUE="monitoring"          # Label value to filter nodes
 REGION="ap-south-1"               # AWS region of the cluster

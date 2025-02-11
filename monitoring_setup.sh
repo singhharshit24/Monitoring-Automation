@@ -160,61 +160,90 @@ connect_to_eks_cluster() {
   fi
 }
 
-command_exists_1() {
-  command -v "$1" &>/dev/null
-}
+ebs_csi_controller_setup () {
+  SERVICE_ACCOUNT="ebs-csi-controller-sa"
+  POLICY_ARN="arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
 
-ebs_csi_setup () {
-  # Ensure required CLI tools are installed
-  for cmd in eksctl kubectl aws; do
-    if ! command_exists_1 $cmd; then
-      echo "Error: $cmd is not installed. Please install it before running this script."
-      exit 1
-    fi
+  echo "🚀 Checking if EBS CSI Driver is installed in cluster: $CLUSTER_NAME"
+
+  ### CHECK IF EBS CSI DRIVER IS INSTALLED ###
+  if kubectl get deployment -n kube-system | grep "ebs-csi-controller"; then
+      echo "✅ EBS CSI Driver is already installed."
+  else
+      echo "🔹 EBS CSI Driver not found. Installing..."
+
+      # Install EBS CSI Driver as an EKS Addon
+      eksctl create addon \
+          --name aws-ebs-csi-driver \
+          --cluster "$CLUSTER_NAME" \
+          --region "$REGION" \
+          --service-account-role-arn "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy" \
+          --force
+
+      echo "⏳ Waiting for EBS CSI Driver to become available..."
+      sleep 30
+
+      # Verify installation
+      if kubectl get deployment -n kube-system | grep -q "ebs-csi-controller"; then
+          echo "✅ EBS CSI Driver successfully installed!"
+      else
+          echo "❌ Installation failed. Check logs for issues."
+          exit 1
+      fi
+  fi
+
+  echo "🚀 Starting EBS CSI Driver setup for cluster: $CLUSTER_NAME in region: $REGION"
+
+  ### 1️⃣ Verify OIDC Provider ###
+  OIDC_ISSUER=$(aws eks describe-cluster --name "$CLUSTER_NAME" --query "cluster.identity.oidc.issuer" --output text)
+
+  if [ -z "$OIDC_ISSUER" ]; then
+      echo "🔹 OIDC not found. Enabling OIDC..."
+      eksctl utils associate-iam-oidc-provider --region "$REGION" --cluster "$CLUSTER_NAME" --approve
+  else
+      echo "✅ OIDC is already enabled: $OIDC_ISSUER"
+  fi
+
+  ### 2️⃣ Create Service Account for EBS CSI Driver ###
+  echo "🔹 Checking if Service Account exists..."
+  if ! kubectl get sa -n kube-system | grep -q "$SERVICE_ACCOUNT"; then
+      echo "🔹 Creating Service Account..."
+      eksctl create iamserviceaccount \
+          --name "$SERVICE_ACCOUNT" \
+          --namespace kube-system \
+          --cluster "$CLUSTER_NAME" \
+          --role-name AmazonEBSCSIDriverRole \
+          --attach-policy-arn "$POLICY_ARN" \
+          --approve \
+          --region "$REGION" \
+          --override-existing-serviceaccounts
+  else
+      echo "✅ Service Account '$SERVICE_ACCOUNT' already exists"
+  fi
+
+  ### 3️⃣ Ensure EC2 IMDS is Configured ###
+  echo "🔹 Checking EC2 IMDS Configuration..."
+  INSTANCE_IDS=$(aws ec2 describe-instances --filters "Name=tag:eks:nodegroup-name,Values=*" --query "Reservations[].Instances[].InstanceId" --output text)
+
+  for INSTANCE_ID in $INSTANCE_IDS; do
+      HTTP_TOKENS=$(aws ec2 describe-instances --instance-ids "$INSTANCE_ID" --query "Reservations[].Instances[].MetadataOptions.HttpTokens" --output text)
+      
+      if [ "$HTTP_TOKENS" == "required" ]; then
+          echo "🔹 Setting IMDS to optional for instance: $INSTANCE_ID"
+          aws ec2 modify-instance-metadata-options \
+              --instance-id "$INSTANCE_ID" \
+              --http-tokens optional \
+              --region "$REGION"
+      else
+          echo "✅ IMDS already set to optional for instance: $INSTANCE_ID"
+      fi
   done
 
-  # Check if the EBS CSI Driver is installed
-  echo "Checking if the AWS EBS CSI Driver is installed in the EKS cluster..."
-  if kubectl get daemonset -n kube-system | grep -q "ebs-csi-controller"; then
-    echo "✅ EBS CSI Driver is already installed."
-  else
-    echo "⚠️ EBS CSI Driver is not installed. Proceeding with installation..."
-    
-    # Check if OIDC provider is enabled for the EKS cluster
-    echo "Checking if OIDC provider is configured..."
-    OIDC_PROVIDER=$(aws eks describe-cluster --name $CLUSTER_NAME --query "cluster.identity.oidc.issuer" --output text)
+  ### 4️⃣ Restart EBS CSI Driver ###
+  echo "🔹 Restarting EBS CSI Driver..."
+  kubectl delete pods -n kube-system -l app.kubernetes.io/name=aws-ebs-csi-driver
 
-    if [ -z "$OIDC_PROVIDER" ] || [[ "$OIDC_PROVIDER" == "None" ]]; then
-      echo "⚠️ No OIDC provider found. Adding OIDC provider to the EKS cluster..."
-      eksctl utils associate-iam-oidc-provider --region $AWS_REGION --cluster $CLUSTER_NAME --approve
-      echo "✅ OIDC provider added successfully."
-    else
-      echo "✅ OIDC provider already exists: $OIDC_PROVIDER"
-    fi
-
-    # Install the AWS EBS CSI Driver
-    echo "Installing AWS EBS CSI Driver..."
-    eksctl create iamserviceaccount \
-      --name ebs-csi-controller-sa \
-      --namespace kube-system \
-      --cluster $CLUSTER_NAME \
-      --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy \
-      --approve \
-      --region $AWS_REGION
-
-    echo "Enabling EBS CSI Driver for the EKS cluster..."
-    aws eks update-cluster-config --region $AWS_REGION --name $CLUSTER_NAME --resources-vpc-config endpointPrivateAccess=true,endpointPublicAccess=true
-
-    echo "Deploying EBS CSI Driver using Helm..."
-    helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver/
-    helm repo update
-    helm install aws-ebs-csi-driver aws-ebs-csi-driver/aws-ebs-csi-driver \
-      --namespace kube-system \
-      --set controller.serviceAccount.create=false \
-      --set controller.serviceAccount.name=ebs-csi-controller-sa
-
-    echo "✅ AWS EBS CSI Driver installed successfully."
-  fi
+  echo "🎉 EBS CSI Driver setup completed successfully!"
 }
 
 create_namespace() {
@@ -225,246 +254,6 @@ create_namespace() {
         echo "Namespace '$NAMESPACE' created."
     fi
     kubectl config set-context --current --namespace=$NAMESPACE
-}
-
-loki_node_selector() {
-  LOKI_NODE_SELECTOR_KEY="type"
-  LOKI_NODE_SELECTOR_VALUE="monitoring"
-  LOKI_NODE_PLACEMENT_CONFIG=$(cat <<EOF
-ingester:
-  nodeSelector:
-    $LOKI_NODE_SELECTOR_KEY: $LOKI_NODE_SELECTOR_VALUE
-distributor:
-  nodeSelector:
-    $LOKI_NODE_SELECTOR_KEY: $LOKI_NODE_SELECTOR_VALUE
-querier:
-  nodeSelector:
-    $LOKI_NODE_SELECTOR_KEY: $LOKI_NODE_SELECTOR_VALUE
-queryFrontend:
-  nodeSelector:
-    $LOKI_NODE_SELECTOR_KEY: $LOKI_NODE_SELECTOR_VALUE
-queryScheduler:
-  nodeSelector:
-    $LOKI_NODE_SELECTOR_KEY: $LOKI_NODE_SELECTOR_VALUE
-tableManager:
-  nodeSelector:
-    $LOKI_NODE_SELECTOR_KEY: $LOKI_NODE_SELECTOR_VALUE
-gateway:
-  nodeSelector:
-    $LOKI_NODE_SELECTOR_KEY: $LOKI_NODE_SELECTOR_VALUE
-compactor:
-  nodeSelector:
-    $LOKI_NODE_SELECTOR_KEY: $LOKI_NODE_SELECTOR_VALUE
-ruler:
-  nodeSelector:
-    $LOKI_NODE_SELECTOR_KEY: $LOKI_NODE_SELECTOR_VALUE
-indexGateway:
-  nodeSelector:
-    $LOKI_NODE_SELECTOR_KEY: $LOKI_NODE_SELECTOR_VALUE
-memcachedChunks:
-  nodeSelector:
-    $LOKI_NODE_SELECTOR_KEY: $LOKI_NODE_SELECTOR_VALUE
-memcachedFrontend:
-  nodeSelector:
-    $LOKI_NODE_SELECTOR_KEY: $LOKI_NODE_SELECTOR_VALUE
-memcachedIndexQueries:
-  nodeSelector:
-    $LOKI_NODE_SELECTOR_KEY: $LOKI_NODE_SELECTOR_VALUE
-memcachedIndexWrites:
-  nodeSelector:
-    $LOKI_NODE_SELECTOR_KEY: $LOKI_NODE_SELECTOR_VALUE
-EOF
-)
-}
-
-loki_node_affinity() {
-  LOKI_NODE_AFFINITY_KEY="type"
-  LOKI_NODE_AFFINITY_VALUE="monitoring"
-  LOKI_NODE_PLACEMENT_CONFIG=$(cat <<EOF
-ingester:
-  affinity:
-    podAntiAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchLabels:
-              {{- include "loki.ingesterSelectorLabels" . | nindent 10 }}
-          topologyKey: kubernetes.io/hostname
-      preferredDuringSchedulingIgnoredDuringExecution:
-        - weight: 100
-          podAffinityTerm:
-            labelSelector:
-              matchLabels:
-                {{- include "loki.ingesterSelectorLabels" . | nindent 12 }}
-            topologyKey: failure-domain.beta.kubernetes.io/zone
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-          - matchExpressions:
-            - key: $LOKI_NODE_AFFINITY_KEY
-              operator: In
-              values:
-              - $LOKI_NODE_AFFINITY_VALUE
-distributor:
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-          - matchExpressions:
-            - key: $LOKI_NODE_AFFINITY_KEY
-              operator: In
-              values:
-              - $LOKI_NODE_AFFINITY_VALUE
-querier:
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-          - matchExpressions:
-            - key: $LOKI_NODE_AFFINITY_KEY
-              operator: In
-              values:
-              - $LOKI_NODE_AFFINITY_VALUE
-queryFrontend:
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-          - matchExpressions:
-            - key: $LOKI_NODE_AFFINITY_KEY
-              operator: In
-              values:
-              - $LOKI_NODE_AFFINITY_VALUE
-queryScheduler:
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-          - matchExpressions:
-            - key: $LOKI_NODE_AFFINITY_KEY
-              operator: In
-              values:
-              - $LOKI_NODE_AFFINITY_VALUE
-tableManager:
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-          - matchExpressions:
-            - key: $LOKI_NODE_AFFINITY_KEY
-              operator: In
-              values:
-              - $LOKI_NODE_AFFINITY_VALUE
-gateway:
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-          - matchExpressions:
-            - key: $LOKI_NODE_AFFINITY_KEY
-              operator: In
-              values:
-              - $LOKI_NODE_AFFINITY_VALUE
-compactor:
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-          - matchExpressions:
-            - key: $LOKI_NODE_AFFINITY_KEY
-              operator: In
-              values:
-              - $LOKI_NODE_AFFINITY_VALUE
-ruler:
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-          - matchExpressions:
-            - key: $LOKI_NODE_AFFINITY_KEY
-              operator: In
-              values:
-              - $LOKI_NODE_AFFINITY_VALUE
-indexGateway:
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-          - matchExpressions:
-            - key: $LOKI_NODE_AFFINITY_KEY
-              operator: In
-              values:
-              - $LOKI_NODE_AFFINITY_VALUE
-memcachedChunks:
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-          - matchExpressions:
-            - key: $LOKI_NODE_AFFINITY_KEY
-              operator: In
-              values:
-              - $LOKI_NODE_AFFINITY_VALUE
-memcachedFrontend:
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-          - matchExpressions:
-            - key: $LOKI_NODE_AFFINITY_KEY
-              operator: In
-              values:
-              - $LOKI_NODE_AFFINITY_VALUE
-memcachedIndexQueries:
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-          - matchExpressions:
-            - key: $LOKI_NODE_AFFINITY_KEY
-              operator: In
-              values:
-              - $LOKI_NODE_AFFINITY_VALUE
-memcachedIndexWrites:
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-          - matchExpressions:
-            - key: $LOKI_NODE_AFFINITY_KEY
-              operator: In
-              values:
-              - $LOKI_NODE_AFFINITY_VALUE
-EOF
-)
-}
-
-configure_loki_node_placement() {
-  echo "Choose a node placement strategy for loki:"
-  echo "1. Node Selector"
-  echo "2. Node Affinity"
-  # echo "3. Taints and Tolerations"
-  echo "3. No Node Placement"
-  read -p "Enter your choice (1/2/3): " NODE_STRATEGY
-
-  case $NODE_STRATEGY in
-    1)
-      loki_node_selector
-      ;;
-    2)
-      loki_node_affinity
-      ;;
-    # 3)
-    #   NODE_PLACEMENT="TaintsAndTolerations"
-    #   toleration
-    #   ;;
-    3)
-      echo "No Node Placement"
-      ;;
-    *)
-      echo "Invalid choice. Exiting."
-      exit 1
-      ;;
-  esac
 }
 
 node_affinity() {
@@ -1191,14 +980,6 @@ check_and_add_helm_repo() {
   helm repo update
 }
 
-deploy_loki() {
-  echo "Deploying loki..."
-  helm upgrade --install loki $LOKI_CHART -f loki-values.yaml -n $NAMESPACE --values - <<EOF
-$LOKI_NODE_PLACEMENT_CONFIG
-EOF
-  helm upgrade --install promtail $PROMTAIL_CHART -f promtail-values.yaml -n $NAMESPACE
-}
-
 deploy_prometheus() {
   echo "Deploying prometheus..."
   helm upgrade --install prometheus-stack $PROMETHEUS_CHART -n $NAMESPACE -f values.yaml --version $PROMETHEUS_VERSION --values - <<EOF
@@ -1237,15 +1018,13 @@ patch_service() {
 main (){
   install_dependencies
   connect_to_eks_cluster
-  ebs_csi_setup
+  ebs_csi_controller_setup
   create_namespace
   storageclass
   configure_node_placement
   configure_grafana_storage
   configure_prometheus_storage
-  # configure_loki_node_placement
   check_and_add_helm_repo
-  # deploy_loki
   deploy_prometheus
   patch_service
   echo "** Setup completed! **"
