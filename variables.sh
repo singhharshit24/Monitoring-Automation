@@ -44,13 +44,13 @@ NODE_AFFINITY_VALUE_TT="monitoring"
 # 2. Dynamic EBS Volume
 # 3. No Storage Required
 # Enter your choice (1/2/3) in STORAGE_CHOICE
-STORAGE_CHOICE="1"
+STORAGE_CHOICE="2"
 
 # if 1. Static EBS Volume  
 # **Please ensure that the volume is created in the same AWS region as the node labeled for monitoring. **
 PV_NAME_ST="grafana-pv"
 PVC_NAME_ST="grafana-pvc"
-PV_ID_ST="vol-0d78fe9ec45e89da3"
+PV_ID_ST=""
 PV_SIZE_ST="1"                      # as created in the Volumes
 
 # if 2. Dynamic EBS Volume
@@ -66,14 +66,14 @@ PV_SIZE_DY="2"
 # 2. Dynamic EBS Volume
 # 3. No Storage Required
 # Enter your choice (1/2/3): in PROMETHEUS_STORAGE_CHOICE
-PROMETHEUS_STORAGE_CHOICE="1"
+PROMETHEUS_STORAGE_CHOICE="2"
 
 # if 1. Static EBS Volume  
 # **Please ensure that the volume is created in the same AWS region as the node labeled for monitoring. **
-PR_PV_ID_ST="vol-05d19e03b04fdc584"
-PR_PV_SIZE_ST="1"
 PR_PV_NAME_ST="prometheus-pv"
 PR_PVC_NAME_ST="prometheus-pvc"
+PR_PV_ID_ST=""
+PR_PV_SIZE_ST="1"
 
 # if 2. Dynamic EBS Volume
 PR_PV_SIZE_DY="2"
