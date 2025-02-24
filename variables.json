@@ -1,7 +1,0 @@
-{
-    "NAMESPACE": "monitoring",
-    "PROMETHEUS_VERSION": "68.3.0",
-    "LOKI_VERSION": "0.80.0",
-    "PROMTAIL_VERSION": "6.16.6"
-  }
-  

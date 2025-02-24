@@ -24,6 +24,42 @@ for RELEASE in "${RELEASES[@]}"; do
   fi
 done
 
+# Function to delete Deployments
+delete_deployments() {
+  echo "Checking for Deployments in $NAMESPACE..."
+  DEPLOYMENTS=$(kubectl get deployments -n "$NAMESPACE" --no-headers | awk '{print $1}')
+  
+  if [ -n "$DEPLOYMENTS" ]; then
+    echo "Found Deployments:"
+    echo "$DEPLOYMENTS"
+    echo "Deleting Deployments..."
+    for deploy in $DEPLOYMENTS; do
+      kubectl delete deployment "$deploy" -n "$NAMESPACE"
+      echo "Deleted Deployment: $deploy"
+    done
+  else
+    echo "No Deployments found in the $NAMESPACE namespace."
+  fi
+}
+
+# Function to delete StatefulSets
+delete_statefulsets() {
+  echo "Checking for StatefulSets in $NAMESPACE..."
+  STATEFULSETS=$(kubectl get statefulsets -n "$NAMESPACE" --no-headers | awk '{print $1}')
+  
+  if [ -n "$STATEFULSETS" ]; then
+    echo "Found StatefulSets:"
+    echo "$STATEFULSETS"
+    echo "Deleting StatefulSets..."
+    for sts in $STATEFULSETS; do
+      kubectl delete statefulset "$sts" -n "$NAMESPACE"
+      echo "Deleted StatefulSet: $sts"
+    done
+  else
+    echo "No StatefulSets found in the $NAMESPACE namespace."
+  fi
+}
+
 # Function to delete PVs
 delete_pvs() {
   echo "Checking for PersistentVolumes (PVs)..."
@@ -60,9 +96,50 @@ delete_pvcs() {
   fi
 }
 
+# Function to delete Services
+delete_services() {
+  echo "Checking for Services in $NAMESPACE..."
+  SERVICE_LIST=$(kubectl get services -n "$NAMESPACE" --no-headers | awk '{print $1}')
+
+  if [ -n "$SERVICE_LIST" ]; then
+    echo "Found the following Services:"
+    echo "$SERVICE_LIST"
+    echo "Deleting Services..."
+    for svc in $SERVICE_LIST; do
+      kubectl delete service "$svc" -n "$NAMESPACE"
+      echo "Deleted Service: $svc"
+    done
+  else
+    echo "No Services found in $NAMESPACE."
+  fi
+}
+
+# Function to delete ServiceMonitors
+delete_service_monitors() {
+  echo "Checking for ServiceMonitors in $NAMESPACE..."
+  SERVICEMONITOR_LIST=$(kubectl get servicemonitor -n "$NAMESPACE" --no-headers | awk '{print $1}')
+
+  if [ -n "$SERVICEMONITOR_LIST" ]; then
+    echo "Found the following ServiceMonitors:"
+    echo "$SERVICEMONITOR_LIST"
+    echo "Deleting ServiceMonitors..."
+    for sm in $SERVICEMONITOR_LIST; do
+      kubectl delete servicemonitor "$sm" -n "$NAMESPACE"
+      echo "Deleted ServiceMonitor: $sm"
+    done
+  else
+    echo "No ServiceMonitors found in $NAMESPACE."
+  fi
+}
+
 # Main script execution
 echo "Starting cleanup in the $NAMESPACE namespace..."
 
+delete_deployments
+delete_statefulsets
+delete_services
+delete_service_monitors
+kubectl delete secret thanos -n $NAMESPACE --ignore-not-found=true
 delete_pvcs
 delete_pvs
 
