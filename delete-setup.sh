@@ -63,7 +63,8 @@ delete_statefulsets() {
 # Function to delete PVs
 delete_pvs() {
   echo "Checking for PersistentVolumes (PVs)..."
-  PV_LIST=$(kubectl get pv --no-headers | awk '/monitoring/ {print $1}')
+  # Modified awk pattern to match both 'prometheus' and 'monitoring'
+  PV_LIST=$(kubectl get pv --no-headers | awk '/prometheus|monitoring/ {print $1}')
   
   if [ -n "$PV_LIST" ]; then
     echo "Found the following PVs:"
@@ -74,9 +75,10 @@ delete_pvs() {
       echo "Deleted PV: $pv"
     done
   else
-    echo "No PVs found in the $NAMESPACE namespace."
+    echo "No Prometheus or monitoring PVs found."
   fi
 }
+
 
 # Function to delete PVCs
 delete_pvcs() {
@@ -99,7 +101,9 @@ delete_pvcs() {
 # Function to delete Services
 delete_services() {
   echo "Checking for Services in $NAMESPACE..."
-  SERVICE_LIST=$(kubectl get services -n "$NAMESPACE" --no-headers | awk '{print $1}')
+  # Modified awk to exclude specific services
+  SERVICE_LIST=$(kubectl get services -n "$NAMESPACE" --no-headers | \
+    awk '$1 != "prometheus-stack-grafana" && $1 != "prometheus-stack-kube-prom-prometheus" {print $1}')
 
   if [ -n "$SERVICE_LIST" ]; then
     echo "Found the following Services:"
@@ -110,7 +114,7 @@ delete_services() {
       echo "Deleted Service: $svc"
     done
   else
-    echo "No Services found in $NAMESPACE."
+    echo "No Services found to delete in $NAMESPACE (excluding prometheus-stack-grafana and prometheus-stack-kube-prom-prometheus)."
   fi
 }
 
