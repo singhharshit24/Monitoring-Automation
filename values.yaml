@@ -3175,8 +3175,8 @@ prometheus:
   # `--store=dnssrv+_grpc._tcp.${kube-prometheus-stack.fullname}-thanos-discovery.${namespace}.svc.cluster.local` to discovery
   # Thanos sidecar on prometheus nodes
   # (Please remember to change ${kube-prometheus-stack.fullname} and ${namespace}. Not just copy and paste!)
-  :
-    enabled: falsethanosService
+  thanosService:
+    enabled: false
     annotations: {}
     labels: {}
 

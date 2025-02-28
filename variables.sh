@@ -67,7 +67,7 @@ PV_SIZE_DY="2"
 # 3. S3 Bucket Storage
 # 4. No Storage Required
 # Enter your choice (1/2/3): in PROMETHEUS_STORAGE_CHOICE
-PROMETHEUS_STORAGE_CHOICE="3"
+PROMETHEUS_STORAGE_CHOICE="2"
 
 # if 1. Static EBS Volume  
 # **Please ensure that the volume is created in the same AWS region as the node labeled for monitoring. **
@@ -82,8 +82,8 @@ PR_PVC_NAME_DY="prometheus-pvc"
 
 # if 3. S3 Bucket Storage
 S3_BUCKET_NAME="prometheus-s3-bucket-1"         # S3 Bucket should be in the same region as the cluster
-AWS_ACCESS_KEY="AKIAS4T6KVMBHKOQRCXD"
-AWS_SECRET_KEY="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"
+AWS_ACCESS_KEY=""
+AWS_SECRET_KEY=""
 
 # if 4. No Storage Required
 
