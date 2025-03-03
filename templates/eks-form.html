@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block title %}EKS Observability Setup{% endblock %}
+
+{% block content %}
+
+<h1 class="title">🔍 Observability on <span>EKS</span> 🚀</h1>
+<div class="form-wrapper">
+    <form id="configForm">
+        <!-- Mandatory Fields Section -->
+        <div class="section">
+            <h3>🔹 Mandatory Configuration</h3>
+            {% for key in variables.keys() %}
+            {% if key in ['NAMESPACE', 'CLUSTER_NAME', 'REGION', 'PROMETHEUS_VERSION',
+            'LOKI_VERSION', 'PROMTAIL_VERSION', 'LABEL_KEY', 'LABEL_VALUE'] %}
+            <label for="{{ key }}">{{ key.replace('_', ' ').title() }}</label>
+            <input type="text" id="{{ key }}" name="{{ key }}" placeholder="Enter {{ key.replace('_', ' ').lower() }}">
+            {% endif %}
+            {% endfor %}
+        </div>
+    </form>
+
+    <form id="configForm1">
+        <!-- Node Strategy Selection -->
+        <div class="section">
+            <h3>📌 Node Placement Strategy</h3>
+            <label for="NODE_STRATEGY">Select a Node Placement strategy:</label>
+            <select id="NODE_STRATEGY" name="NODE_STRATEGY" onchange="toggleNodeFields()">
+                <option value="4">No Node Placement</option>
+                <option value="1">Node Selector</option>
+                <option value="2">Node Affinity</option>
+                <option value="3">Taints and Tolerations</option>
+            </select>
+
+            <!-- Node Selector Fields -->
+            <div id="nodeSelectorFields" class="hidden">
+                <label for="NODE_SELECTOR_KEY">Node Selector Key</label>
+                <input type="text" id="NODE_SELECTOR_KEY" name="NODE_SELECTOR_KEY"
+                    placeholder="Enter node selector key">
+
+                <label for="NODE_SELECTOR_VALUE">Node Selector Value</label>
+                <input type="text" id="NODE_SELECTOR_VALUE" name="NODE_SELECTOR_VALUE"
+                    placeholder="Enter node selector value">
+            </div>
+
+            <!-- Node Affinity Fields -->
+            <div id="nodeAffinityFields" class="hidden">
+                <label for="NODE_AFFINITY_KEY">Node Affinity Key</label>
+                <input type="text" id="NODE_AFFINITY_KEY" name="NODE_AFFINITY_KEY"
+                    placeholder="Enter node affinity key">
+
+                <label for="NODE_AFFINITY_VALUE">Node Affinity Value</label>
+                <input type="text" id="NODE_AFFINITY_VALUE" name="NODE_AFFINITY_VALUE"
+                    placeholder="Enter node affinity value">
+            </div>
+
+            <!-- Taints and Tolerations Fields -->
+            <div id="taintsFields" class="hidden">
+                <label for="TAINT_KEY">Taint Key</label>
+                <input type="text" id="TAINT_KEY" name="TAINT_KEY" placeholder="Enter taint key">
+
+                <label for="TAINT_VALUE">Taint Value</label>
+                <input type="text" id="TAINT_VALUE" name="TAINT_VALUE" placeholder="Enter taint value">
+
+                <label for="TAINT_EFFECT">Taint Effect</label>
+                <select id="TAINT_EFFECT" name="TAINT_EFFECT">
+                    <option value="NoSchedule">NoSchedule</option>
+                    <option value="PreferNoSchedule">PreferNoSchedule</option>
+                    <option value="NoExecute">NoExecute</option>
+                </select>
+
+                <label for="NODE_AFFINITY_KEY_TT">Node Affinity Key</label>
+                <input type="text" id="NODE_AFFINITY_KEY_TT" name="NODE_AFFINITY_KEY_TT"
+                    placeholder="Enter node affinity key for toleration">
+
+                <label for="NODE_AFFINITY_VALUE_TT">Node Affinity Value</label>
+                <input type="text" id="NODE_AFFINITY_VALUE_TT" name="NODE_AFFINITY_VALUE_TT"
+                    placeholder="Enter node affinity value for toleration">
+            </div>
+        </div>
+    </form>
+
+    <form id="configForm2">
+        <!-- Grafana Storage Function -->
+        <div class="section">
+            <h3>🗄️ Grafana Storage</h3>
+            <label for="STORAGE_CHOICE">Select Grafana Storage Choice</label>
+            <select id="STORAGE_CHOICE" name="STORAGE_CHOICE" onchange="toggleStorageFields()">
+                <option value="3">No Storage Required</option>
+                <option value="1">Static EBS Volume</option>
+                <option value="2">Dynamic EBS Volume</option>
+            </select>
+
+            <!-- Static EBS Volume -->
+            <div id="staticEBSVolume" class="hidden">
+                <label for="PV_NAME_ST">PV Name</label>
+                <input type="text" id="PV_NAME_ST" name="PV_NAME_ST"
+                    placeholder="Enter Persistent Volume Name for Static EBS Volume">
+
+                <label for="PVC_NAME_ST">PVC Name</label>
+                <input type="text" id="PVC_NAME_ST" name="PVC_NAME_ST"
+                    placeholder="Enter Persistent Volume Claim Name for Static EBS Volume">
+
+                <label for="PV_ID_ST">EBS Volume Id</label>
+                <input type="text" id="PV_ID_ST" name="PV_ID_ST" placeholder="Enter EBS Volume Id">
+            </div>
+
+            <!-- Dynamic EBS Volume -->
+            <div id="dynamicEBSVolume" class="hidden">
+                <label for="PVC_NAME_DY">PVC Name</label>
+                <input type="text" id="PVC_NAME_DY" name="PVC_NAME_DY"
+                    placeholder="Enter PVC Name for Dynamic EBS Volume">
+
+                <label for="PV_SIZE_DY">PV Size</label>
+                <input type="text" id="PV_SIZE_DY" name="PV_SIZE_DY"
+                    placeholder="Enter Size of EBS Volume in GBs for Dynamic EBS Volume">
+            </div>
+        </div>
+    </form>
+
+    <form id="configForm3">
+
+        <!-- Prometheus Storage Function -->
+        <div class="section">
+            <h3>📊 Prometheus Storage</h3>
+            <label for="PROMETHEUS_STORAGE_CHOICE">Select Prometheus Storage Choice</label>
+            <select id="PROMETHEUS_STORAGE_CHOICE" name="PROMETHEUS_STORAGE_CHOICE"
+                onchange="togglePrometheusStorageFields()">
+                <option value="4">No Storage Required</option>
+                <option value="1">Static EBS Volume</option>
+                <option value="2">Dynamic EBS Volume</option>
+                <option value="3">S3 Bucket</option>
+            </select>
+
+            <!-- Static EBS Volume -->
+            <div id="staticEBSVolumePR" class="hidden">
+                <label for="PR_PV_NAME_ST">PV Name</label>
+                <input type="text" id="PR_PV_NAME_ST" name="PR_PV_NAME_ST"
+                    placeholder="Enter Persistent Volume Name for Static EBS Volume">
+
+                <label for="PR_PVC_NAME_ST">PVC Name</label>
+                <input type="text" id="PR_PVC_NAME_ST" name="PR_PVC_NAME_ST"
+                    placeholder="Enter Persistent Volume Claim Name for Static EBS Volume">
+
+                <label for="PR_PV_ID_ST">EBS Volume Id</label>
+                <input type="text" id="PR_PV_ID_ST" name="PR_PV_ID_ST" placeholder="Enter EBS Volume Id">
+            </div>
+
+            <!-- Dynamic EBS Volume -->
+            <div id="dynamicEBSVolumePR" class="hidden">
+                <label for="PR_PVC_NAME_DY">PVC Name</label>
+                <input type="text" id="PR_PVC_NAME_DY" name="PR_PVC_NAME_DY"
+                    placeholder="Enter PVC Name for Dynamic EBS Volume">
+
+                <label for="PR_PV_SIZE_DY">PV Size</label>
+                <input type="text" id="PR_PV_SIZE_DY" name="PR_PV_SIZE_DY"
+                    placeholder="Enter Size of EBS Volume in GBs for Dynamic EBS Volume">
+            </div>
+
+            <!-- S3 Storage -->
+            <div id="s3Storage" class="hidden">
+                <label for="S3_BUCKET_NAME">S3 Bucket Name</label>
+                <input type="text" id="S3_BUCKET_NAME" name="S3_BUCKET_NAME"
+                    placeholder="Enter the name of the S3 bucket created">
+
+                <label for="AWS_ACCESS_KEY">AWS Access Key</label>
+                <input type="password" id="AWS_ACCESS_KEY" name="AWS_ACCESS_KEY" placeholder="Enter the AWS access key">
+
+                <label for="AWS_SECRET_KEY">AWS Secret Key</label>
+                <input type="password" id="AWS_SECRET_KEY" name="AWS_SECRET_KEY" placeholder="Enter the AWS secret key">
+            </div>
+        </div>
+    </form>
+
+    <div class="button-container">
+        <button type="button" onclick="deploySetup()">Deploy on EKS</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function togglePrometheusStorageFields() {
+        const strategy = document.getElementById("PROMETHEUS_STORAGE_CHOICE").value;
+        document.getElementById("staticEBSVolumePR").classList.toggle("hidden", strategy !== "1");
+        document.getElementById("dynamicEBSVolumePR").classList.toggle("hidden", strategy !== "2");
+        document.getElementById("s3Storage").classList.toggle("hidden", strategy !== "3");
+    }
+
+    function toggleStorageFields() {
+        const strategy = document.getElementById("STORAGE_CHOICE").value;
+        document.getElementById("staticEBSVolume").classList.toggle("hidden", strategy !== "1");
+        document.getElementById("dynamicEBSVolume").classList.toggle("hidden", strategy !== "2");
+    }
+
+    function toggleNodeFields() {
+        const strategy = document.getElementById("NODE_STRATEGY").value;
+        document.getElementById("nodeSelectorFields").classList.toggle("hidden", strategy !== "1");
+        document.getElementById("nodeAffinityFields").classList.toggle("hidden", strategy !== "2");
+        document.getElementById("taintsFields").classList.toggle("hidden", strategy !== "3");
+    }
+
+    function deploySetup() {
+        if (confirm("Are you sure you want to update the configuration and deploy the setup?")) {
+            let formIds = ["configForm", "configForm1", "configForm2", "configForm3"];
+            let formData = new FormData();
+
+            formIds.forEach(id => {
+                let form = document.getElementById(id);
+                if (form) {
+                    let singleFormData = new FormData(form);
+                    for (let [key, value] of singleFormData.entries()) {
+                        formData.append(key, value);
+                    }
+                }
+            });
+
+            fetch('/deploy', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => alert(data.message))
+                .catch(error => alert("Error running setup: " + error));
+        }
+    }
+
+    // Initialize field visibility
+    toggleNodeFields();
+    toggleStorageFields();
+    togglePrometheusStorageFields();
+</script>
+{% endblock %}

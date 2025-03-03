@@ -1,14 +1,16 @@
 # variables.sh
-NAMESPACE=""
+PROJECT_ID="rock-star-450114-d3"
 
-CLUSTER_NAME=""
-LABEL_KEY=""
-LABEL_VALUE=""
-REGION=""
+NAMESPACE="monitoring"
 
-PROMETHEUS_VERSION=""
-LOKI_VERSION=""
-PROMTAIL_VERSION=""
+CLUSTER_NAME="gke-demo1"
+LABEL_KEY="type"
+LABEL_VALUE="monitoring"
+REGION="us-east1-b"
+
+PROMETHEUS_VERSION="68.3.0"
+LOKI_VERSION="0.80.0"
+PROMTAIL_VERSION="6.16.6"
 
 # *************************************************************
 
@@ -18,11 +20,11 @@ PROMTAIL_VERSION=""
 # 3. Taints and Tolerations
 # 4. No Node Placement
 # Enter your choice (1/2/3/4) in NODE_STRATEGY
-NODE_STRATEGY="4"
+NODE_STRATEGY="1"
 
 # if 1. Node Selector
-NODE_SELECTOR_KEY=""
-NODE_SELECTOR_VALUE=""
+NODE_SELECTOR_KEY="type"
+NODE_SELECTOR_VALUE="monitoring"
 
 # if 2. Node Affinity
 NODE_AFFINITY_KEY=""
@@ -44,7 +46,7 @@ NODE_AFFINITY_VALUE_TT=""
 # 2. Dynamic EBS Volume
 # 3. No Storage Required
 # Enter your choice (1/2/3) in STORAGE_CHOICE
-STORAGE_CHOICE="3"
+STORAGE_CHOICE="2"
 
 # if 1. Static EBS Volume  
 # **Please ensure that the volume is created in the same AWS region as the node labeled for monitoring. **
@@ -53,8 +55,8 @@ PVC_NAME_ST=""
 PV_ID_ST=""
 
 # if 2. Dynamic EBS Volume
-PVC_NAME_DY=""
-PV_SIZE_DY=""
+PVC_NAME_DY="grafana-pvc"
+PV_SIZE_DY="10"
 
 # if 3. No Storage Required
 
@@ -63,10 +65,9 @@ PV_SIZE_DY=""
 # Choose a storage option for Prometheus:
 # 1. Static EBS Volume
 # 2. Dynamic EBS Volume
-# 3. S3 Bucket Storage
-# 4. No Storage Required
+# 3. No Storage Required
 # Enter your choice (1/2/3): in PROMETHEUS_STORAGE_CHOICE
-PROMETHEUS_STORAGE_CHOICE="4"
+PROMETHEUS_STORAGE_CHOICE="2"
 
 # if 1. Static EBS Volume  
 # **Please ensure that the volume is created in the same AWS region as the node labeled for monitoring. **
@@ -75,13 +76,11 @@ PR_PVC_NAME_ST=""
 PR_PV_ID_ST=""
 
 # if 2. Dynamic EBS Volume
-PR_PVC_NAME_DY=""
-PR_PV_SIZE_DY=""
+PR_PV_SIZE_DY="10"
+PR_PVC_NAME_DY="prometheus-pvc"
 
-# if 3. S3 Bucket Storage
-S3_BUCKET_NAME=""
-AWS_ACCESS_KEY=""
-AWS_SECRET_KEY=""
+# if 3. GCS Bucket Storage
+BUCKET_NAME=""
 
 # if 4. No Storage Required
 

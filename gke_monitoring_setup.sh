@@ -4,8 +4,7 @@ set -e  # Exit on error
 
 clear
 
-source ./variables.sh
-
+source ./gke-variables.sh
 
 PROMETHEUS_CHART="prometheus-community/kube-prometheus-stack"
 LOKI_CHART="grafana/loki-distributed"
@@ -19,234 +18,13 @@ PROMETHEUS_STORAGE_CLASS=""
 GRAFANA_SERVICE="prometheus-stack-grafana"
 PROMETHEUS_SERVICE="prometheus-stack-kube-prom-prometheus"
 
-command_exists() {
-    command -v "$1" >/dev/null 2>&1
-}
+configure_GKE_auth (){
+  # Set your project ID
+  gcloud config set project $PROJECT_ID
 
-install_unzip() {
-    if ! command_exists unzip; then
-        echo "Installing unzip..."
-        if command_exists apt; then
-            sudo apt update && sudo apt install -y unzip
-        elif command_exists yum; then
-            sudo yum install -y unzip
-        elif command_exists dnf; then
-            sudo dnf install -y unzip
-        elif command_exists brew; then
-            brew install unzip
-        else
-            echo "Unsupported OS: Cannot install unzip. Please install it manually."
-            exit 1
-        fi
-    fi
-}
+  # Get cluster credentials (replace with your cluster name and zone/region)
+  gcloud container clusters get-credentials $CLUSTER_NAME --zone $REGION --project $PROJECT_ID
 
-install_aws_cli() {
-    echo "Installing AWS CLI..."
-    if [[ "$ios_type" == "darwin" ]]; then
-        brew install awscli
-    else
-        curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-        unzip -q awscliv2.zip
-        sudo ./aws/install
-        rm -rf awscliv2.zip aws
-    fi
-}
-
-install_kubectl() {
-    echo "Installing kubectl..."
-    
-    # Fetch the latest stable version (fix redirect issue by adding -L)
-    KUBECTL_VERSION=$(curl -sL https://dl.k8s.io/release/stable.txt)
-
-    # Debugging: Print the retrieved version
-    echo "Retrieved kubectl version: '$KUBECTL_VERSION'"
-
-    # Validate the version
-    if [[ -z "$KUBECTL_VERSION" ]]; then
-        echo "Error: Failed to fetch the latest kubectl version."
-        exit 1
-    fi
-
-    # Download kubectl
-    KUBECTL_URL="https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
-    echo "Downloading from: $KUBECTL_URL"
-    curl -LO "$KUBECTL_URL"
-
-    # Verify if the file was downloaded
-    if [[ ! -f "kubectl" ]]; then
-        echo "Error: Failed to download kubectl."
-        exit 1
-    fi
-
-    # Install kubectl
-    sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-    rm -f kubectl
-}
-
-install_helm() {
-    echo "Installing Helm..."
-    if [[ "$ios_type" == "darwin" ]]; then
-        brew install helm
-    else
-        curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-    fi
-}
-
-install_eksctl() {
-    echo "Installing eksctl..."
-    if [[ "$ios_type" == "darwin" ]]; then
-        brew install eksctl
-    else
-        curl -sL "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_Linux_amd64.tar.gz" | tar xz -C /tmp
-        sudo mv /tmp/eksctl /usr/local/bin/
-    fi
-}
-
-install_dependencies () {
-  echo "Checking and installing required dependencies: kubectl, eksctl, aws-cli, and helm..."
-
-  # Detect OS
-  ios_type="$(uname -s | tr '[:upper:]' '[:lower:]')"
-
-  install_unzip
-
-  # Install missing tools
-  if ! command_exists aws; then install_aws_cli; else echo "AWS CLI is already installed."; fi
-  if ! command_exists kubectl; then install_kubectl; else echo "kubectl is already installed."; fi
-  if ! command_exists helm; then install_helm; else echo "Helm is already installed."; fi
-  if ! command_exists eksctl; then install_eksctl; else echo "eksctl is already installed."; fi
-
-  # Verify installations
-  echo "Installed versions:"
-  aws --version || echo "AWS CLI not found"
-  kubectl version --client --output=yaml || echo "kubectl not found"
-  helm version || echo "Helm not found"
-  eksctl version || echo "eksctl not found"
-
-  echo "All required tools are installed!"
-}
-
-# Function to check if the cluster exists in the specified region
-check_cluster_exists() {
-  local region=$1
-  local cluster_name=$2
-
-  # Using AWS CLI to describe the EKS cluster
-  aws eks --region "$region" describe-cluster --name "$cluster_name" > /dev/null 2>&1
-  if [ $? -eq 0 ]; then
-    echo "Cluster '$cluster_name' exists in region '$region'."
-    return 0
-  else
-    echo "Cluster '$cluster_name' does not exist in region '$region'. Please check the cluster name or region."
-    return 1
-  fi
-}
-
-# Function to connect to the EKS cluster
-connect_to_eks_cluster() {
-  # Fetch the cluster name and region from the variables file
-  local cluster_name=$CLUSTER_NAME
-  local region=$REGION
-
-  # Check if the cluster exists
-  if check_cluster_exists "$region" "$cluster_name"; then
-    # Connect to the EKS cluster if it exists
-    echo "Connecting to EKS cluster: $cluster_name in region: $region"
-    aws eks --region "$region" update-kubeconfig --name "$cluster_name"
-    echo "Connected to the cluster '$cluster_name'."
-  else
-    echo "Failed to connect to the cluster."
-  fi
-}
-
-ebs_csi_controller_setup () {
-  SERVICE_ACCOUNT="ebs-csi-controller-sa"
-  POLICY_ARN="arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
-
-  echo "🚀 Checking if EBS CSI Driver is installed in cluster: $CLUSTER_NAME"
-
-  ### CHECK IF EBS CSI DRIVER IS INSTALLED ###
-  if kubectl get deployment -n kube-system | grep "ebs-csi-controller"; then
-      echo "✅ EBS CSI Driver is already installed."
-  else
-      echo "🔹 EBS CSI Driver not found. Installing..."
-
-      # Install EBS CSI Driver as an EKS Addon
-      eksctl create addon \
-          --name aws-ebs-csi-driver \
-          --cluster "$CLUSTER_NAME" \
-          --region "$REGION" \
-          --service-account-role-arn "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy" \
-          --force
-
-      echo "⏳ Waiting for EBS CSI Driver to become available..."
-      sleep 30
-
-      # Verify installation
-      if kubectl get deployment -n kube-system | grep -q "ebs-csi-controller"; then
-          echo "✅ EBS CSI Driver successfully installed!"
-      else
-          echo "❌ Installation failed. Check logs for issues."
-          exit 1
-      fi
-  fi
-
-  echo "🚀 Starting EBS CSI Driver setup for cluster: $CLUSTER_NAME in region: $REGION"
-
-  ### 1️⃣ Verify OIDC Provider ###
-  OIDC_ISSUER=$(aws eks describe-cluster --name "$CLUSTER_NAME" --query "cluster.identity.oidc.issuer" --output text)
-
-  if [ -z "$OIDC_ISSUER" ]; then
-      echo "🔹 OIDC not found. Enabling OIDC..."
-      eksctl utils associate-iam-oidc-provider --region "$REGION" --cluster "$CLUSTER_NAME" --approve
-  else
-      echo "✅ OIDC is already enabled: $OIDC_ISSUER"
-  fi
-
-  ### 2️⃣ Create Service Account for EBS CSI Driver ###
-  echo "🔹 Checking if Service Account exists..."
-  if ! kubectl get sa -n kube-system | grep -q "$SERVICE_ACCOUNT"; then
-      echo "🔹 Creating Service Account..."
-      eksctl create iamserviceaccount \
-          --name "$SERVICE_ACCOUNT" \
-          --namespace kube-system \
-          --cluster "$CLUSTER_NAME" \
-          --role-name AmazonEBSCSIDriverRole \
-          --attach-policy-arn "$POLICY_ARN" \
-          --approve \
-          --region "$REGION" \
-          --override-existing-serviceaccounts
-  else
-      echo "✅ Service Account '$SERVICE_ACCOUNT' already exists"
-  fi
-
-  ### 3️⃣ Ensure EC2 IMDS is Configured ###
-  echo "🔹 Checking EC2 IMDS Configuration..."
-  INSTANCE_IDS=$(aws ec2 describe-instances \
-  --filters "Name=tag:eks:cluster-name,Values=$CLUSTER_NAME" \
-  --query "Reservations[].Instances[].InstanceId" \
-  --output text)
-
-  for INSTANCE_ID in $INSTANCE_IDS; do
-      HTTP_TOKENS=$(aws ec2 describe-instances --instance-ids "$INSTANCE_ID" --query "Reservations[].Instances[].MetadataOptions.HttpTokens" --output text)
-      
-      if [ "$HTTP_TOKENS" == "required" ]; then
-          echo "🔹 Setting IMDS to optional for instance: $INSTANCE_ID"
-          aws ec2 modify-instance-metadata-options \
-              --instance-id "$INSTANCE_ID" \
-              --http-tokens optional \
-              --region "$REGION"
-      else
-          echo "✅ IMDS already set to optional for instance: $INSTANCE_ID"
-      fi
-  done
-
-  ### 4️⃣ Restart EBS CSI Driver ###
-  echo "🔹 Restarting EBS CSI Driver..."
-  kubectl delete pods -n kube-system -l app.kubernetes.io/name=aws-ebs-csi-driver
-
-  echo "🎉 EBS CSI Driver setup completed successfully!"
 }
 
 create_namespace() {
@@ -257,6 +35,91 @@ create_namespace() {
         echo "Namespace '$NAMESPACE' created."
     fi
     kubectl config set-context --current --namespace=$NAMESPACE
+}
+
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+install_unzip() {
+    if ! command_exists unzip; then
+        echo "Installing unzip..."
+        sudo apt update && sudo apt install -y unzip
+    else
+        echo "Unzip is already installed."
+    fi
+}
+
+install_jq() {
+    if ! command_exists jq; then
+        echo "Installing jq..."
+        sudo apt update && sudo apt install -y jq
+    else
+        echo "jq is already installed."
+    fi
+}
+
+install_gcloud() {
+    if ! command_exists gcloud; then
+        echo "Installing Google Cloud SDK..."
+        sudo apt update && sudo apt install -y curl apt-transport-https ca-certificates gnupg
+        
+        # Add Google Cloud SDK repository
+        curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+        echo "deb http://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+        
+        sudo apt update && sudo apt install -y google-cloud-sdk google-cloud-sdk-gke-gcloud-auth-plugin google-cloud-sdk-storage
+    else
+        echo "Google Cloud SDK is already installed."
+    fi
+}
+
+install_kubectl() {
+    if ! command_exists kubectl; then
+        echo "Installing kubectl..."
+
+        # Ensure the Google Cloud SDK repository is added
+        sudo apt update && sudo apt install -y curl apt-transport-https ca-certificates gnupg
+
+        curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+        echo "deb http://packages.cloud.google.com/apt cloud-sdk main" | sudo tee /etc/apt/sources.list.d/google-cloud-sdk.list
+
+        sudo apt update && sudo apt install -y google-cloud-sdk
+
+        # Install the GKE authentication plugin
+        sudo apt install -y google-cloud-sdk-gke-gcloud-auth-plugin
+
+        # ✅ Install kubectl directly via apt
+        sudo apt install -y kubectl
+    else
+        echo "✅ kubectl is already installed."
+    fi
+}
+
+install_helm() {
+    if ! command_exists helm; then
+        echo "Installing Helm..."
+        curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+    else
+        echo "Helm is already installed."
+    fi
+}
+
+install_dependencies () {
+    echo "Checking and installing required dependencies..."
+    install_unzip
+    install_jq
+    install_gcloud
+    install_kubectl
+    install_helm
+
+    # Verify installations
+    echo "Installed versions:"
+    gcloud version || echo "gcloud not found"
+    kubectl version --client --output=yaml || echo "kubectl not found"
+    helm version || echo "Helm not found"
+
+    echo "✅ All required tools are installed!"
 }
 
 node_affinity() {
@@ -518,178 +381,111 @@ configure_node_placement() {
   esac
 }
 
-get_AZ_node() {
-  # CLUSTER_NAME="eks-demo1"  # EKS cluster name
-  # LABEL_KEY="type"                  # Label key to filter nodes
-  # LABEL_VALUE="monitoring"          # Label value to filter nodes
-  # REGION="ap-south-1"               # AWS region
-
-  # Get nodes with the specified label
-  NODES=$(kubectl get nodes \
-    -l "${LABEL_KEY}=${LABEL_VALUE}" \
-    --no-headers \
-    -o custom-columns=":metadata.name")
-
-  if [ -z "$NODES" ]; then
-      echo "No nodes found with label ${LABEL_KEY}=${LABEL_VALUE}"
-      exit 1
-  fi
-
-  # Loop through each node and get its AZ
-  for NODE in $NODES; do
-      echo "Getting availability zone for node: $NODE"
-      
-      # Get instance ID from the node name
-      INSTANCE_ID=$(aws ec2 describe-instances \
-          --filters "Name=private-dns-name,Values=${NODE}" \
-          --region "${REGION}" \
-          --query 'Reservations[].Instances[].InstanceId' \
-          --output text)
-      
-      if [ -z "$INSTANCE_ID" ]; then
-          echo "Could not find EC2 instance for node ${NODE}"
-          continue
-      fi
-      
-      # Get the AZ using the instance ID
-      AZ=$(aws ec2 describe-instances \
-          --instance-ids "${INSTANCE_ID}" \
-          --region "${REGION}" \
-          --query 'Reservations[].Instances[].Placement.AvailabilityZone' \
-          --output text)
-      
-      echo "Node: ${NODE}"
-      echo "Instance ID: ${INSTANCE_ID}"
-      echo "Availability Zone: ${AZ}"
-      echo "------------------------"
-  done
-}
-
-storageclass() {
-  get_AZ_node
+storageclass (){
   kubectl apply -n $NAMESPACE -f - <<EOF
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: gp3-sc
-provisioner: ebs.csi.aws.com
-parameters:
-  type: gp3
-  fsType: ext4
-reclaimPolicy: Retain
+  name: gke-storage-class
+provisioner: pd.csi.storage.gke.io
 volumeBindingMode: WaitForFirstConsumer
 allowVolumeExpansion: true
-# allowedTopologies:
-#   - matchLabelExpressions:
-#       - key: topology.ebs.csi.aws.com/zone
-#         values:
-#           - $AZ
+parameters:
+  type: pd-ssd         # Options: pd-standard, pd-balanced, pd-ssd
+  replication-type: none  # none for single-zone, regional-pd for multi-zone
 EOF
 }
 
-configure_s3_storage() {
-  SERVICE_ACCOUNT_NAME="prometheus-thanos-sa"
-  IAM_POLICY_NAME="PrometheusS3AccessPolicy"
-  IAM_ROLE_NAME="PrometheusS3AccessRole"
+create_service_account (){
 
-  # Get AWS account ID dynamically
-  AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+  PROJECT_ID_EXISTS=$(gcloud config get-value project 2>/dev/null)
 
-  # 1. Create IAM Policy if not exists
-  if ! aws iam get-policy --policy-arn arn:aws:iam::$AWS_ACCOUNT_ID:policy/$IAM_POLICY_NAME &>/dev/null; then
-    echo "Creating IAM policy: $IAM_POLICY_NAME"
-    aws iam create-policy --policy-name "$IAM_POLICY_NAME" --policy-document '{
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Effect": "Allow",
-                "Action": [
-                    "s3:GetObject",
-                    "s3:PutObject",
-                    "s3:DeleteObject",
-                    "s3:ListBucket"
-                ],
-                "Resource": [
-                    "arn:aws:s3:::'"$S3_BUCKET_NAME"'",
-                    "arn:aws:s3:::'"$S3_BUCKET_NAME"'/*"
-                ]
-            }
-        ]
-    }'
-  else
-    echo "IAM policy $IAM_POLICY_NAME already exists."
+  if [[ -z "$PROJECT_ID_EXISTS" ]]; then
+    echo "❌ ERROR: PROJECT_ID is not set."
+    gcloud config set project $PROJECT_ID
   fi
 
-  eksctl create iamserviceaccount \
-        --name "$SERVICE_ACCOUNT_NAME" \
-        --namespace $NAMESPACE \
-        --cluster "$CLUSTER_NAME" \
-        --attach-policy-arn arn:aws:iam::$AWS_ACCOUNT_ID:policy/$IAM_POLICY_NAME \
-        --approve \
-        --region "$REGION" \
-        --override-existing-serviceaccounts
+  SERVICE_ACCOUNT_NAME="thanos-sa"
+  SERVICE_ACCOUNT_DESCRIPTION="GCP Service Account for Prometheus Storage in Bucket"
+  SERVICE_ACCOUNT_DISPLAY_NAME="My Service Account"
+  KEY_OUTPUT_FILE="thanos-service-account-key.json"
 
-  OIDC_PROVIDER=$(aws eks describe-cluster --name new-cluster --query "cluster.identity.oidc.issuer" --output text | awk -F'/' '{print $NF}')
+  # Check if the service account already exists
+  EXISTING_SA=$(gcloud iam service-accounts list --format="value(email)" --filter="email:$SERVICE_ACCOUNT_NAME@$PROJECT_ID.iam.gserviceaccount.com")
 
-  # Create Role
-  if aws iam get-role --role-name "$IAM_ROLE_NAME" >/dev/null 2>&1; then
-      echo "Role $IAM_ROLE_NAME already exists."
+  if [[ -z "$EXISTING_SA" ]]; then
+    echo "🚀 Service account '$SERVICE_ACCOUNT_NAME' does not exist. Creating it now..."
+    
+    gcloud iam service-accounts create "$SERVICE_ACCOUNT_NAME" \
+        --description="$SERVICE_ACCOUNT_DESCRIPTION" \
+        --display-name="$SERVICE_ACCOUNT_DISPLAY_NAME" \
+        --project="$PROJECT_ID"
   else
-      aws iam create-role --role-name $IAM_ROLE_NAME --assume-role-policy-document '{
-        "Version": "2012-10-17",
-        "Statement": [
-          {
-            "Effect": "Allow",
-            "Principal": {
-              "Federated": "arn:aws:iam::'$AWS_ACCOUNT_ID':oidc-provider/oidc.eks.'$REGION'.amazonaws.com/id/'$OIDC_PROVIDER'"
-            },
-            "Action": "sts:AssumeRoleWithWebIdentity",
-            "Condition": {
-              "StringEquals": {
-                "oidc.eks.$REGION.amazonaws.com/id/'$OIDC_PROVIDER':sub": "system:serviceaccount:'$NAMESPACE':'$SERVICE_ACCOUNT_NAME'"
-              }
-            }
-          }
-        ]
-      }'
-
-      echo "Role $IAM_ROLE_NAME created successfully."
+    echo "✅ Service account '$SERVICE_ACCOUNT_NAME' already exists. Checking roles..."
+    
+    for ROLE in "roles/storage.objectCreator" "roles/storage.objectViewer"; do
+      ROLE_BOUND=$(gcloud projects get-iam-policy "$PROJECT_ID" --flatten="bindings[].members" --format="value(bindings.role)" --filter="bindings.members:serviceAccount:$SERVICE_ACCOUNT_NAME@$PROJECT_ID.iam.gserviceaccount.com" | grep "$ROLE" || true)
+      
+      if [[ -z "$ROLE_BOUND" ]]; then
+        echo "🔗 Role $ROLE is missing. Attaching it now..."
+        gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+            --member="serviceAccount:$SERVICE_ACCOUNT_NAME@$PROJECT_ID.iam.gserviceaccount.com" \
+            --role="$ROLE"
+      else
+        echo "✅ Role $ROLE is already assigned."
+      fi
+    done
   fi
 
-  # 2. Delete & Recreate IAM Service Account to ensure correct policy attachment
-  # eksctl delete iamserviceaccount \
-  #       --name "$SERVICE_ACCOUNT_NAME" \
-  #       --namespace $NAMESPACE \
-  #       --cluster "$CLUSTER_NAME" \
-  #       --region "$REGION" \
-  #       --wait || echo "No existing service account to delete"
-
-  # 3. Create Thanos storage configuration
-  FILE="object-store.yaml"
-
-  if [ -f "$FILE" ]; then
-      echo "File $FILE found. Deleting..."
-      rm "$FILE"
-      echo "File deleted."
+  # Check if the key file already exists
+  if [[ ! -f "$KEY_OUTPUT_FILE" ]]; then
+    echo "🔑 Generating a new key for the service account..."
+    gcloud iam service-accounts keys create $KEY_OUTPUT_FILE \
+        --iam-account="$SERVICE_ACCOUNT_NAME@$PROJECT_ID.iam.gserviceaccount.com" \
+        --project=$PROJECT_ID
   else
-      echo "File $FILE does not exist."
+    echo "🔑 Key file '$KEY_OUTPUT_FILE' already exists. Skipping key generation."
   fi
 
-  cat <<EOF >> object-store.yaml
-type: S3
-config:
-  endpoint: "s3.$REGION.amazonaws.com"
-  bucket: "$S3_BUCKET_NAME"
-  region: "$REGION"
-  access_key: "$AWS_ACCESS_KEY"
-  secret_key: "$AWS_SECRET_KEY"
+  kubectl apply -n $NAMESPACE -f - <<EOF
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: thanos-sa
+  namespace: monitoring
+  annotations:
+    iam.gke.io/gcp-service-account: $SERVICE_ACCOUNT_NAME@$PROJECT_ID.iam.gserviceaccount.com
 EOF
 
-  # 4. Create Kubernetes Secret for Thanos
-  kubectl delete secret -n $NAMESPACE thanos --ignore-not-found=true
-  kubectl create secret generic thanos --from-file=object-store.yaml=$FILE --namespace $NAMESPACE
+  echo "✅ Service account '$SERVICE_ACCOUNT_NAME' created successfully!"
+  echo "🔑 Key saved as '$KEY_OUTPUT_FILE'"
+}
 
-  # Deploy Thanos manifest files
+configure_GCS_bucket_storage (){
+  create_service_account
+  # Convert JSON key file to an inline YAML-friendly format
+  ESCAPED_JSON=$(jq -c . < $KEY_OUTPUT_FILE)
+  CONFIG_FILE="thanos.yaml"
+
+  if [ -f "$CONFIG_FILE" ]; then
+      echo "File $CONFIG_FILE found. Deleting..."
+      rm "$CONFIG_FILE"
+      echo "File deleted."
+  else
+      echo "File $CONFIG_FILE does not exist."
+  fi
+  # Create the updated YAML content
+  cat <<EOF > $CONFIG_FILE
+type: GCS
+config:
+  bucket: "$BUCKET_NAME"
+  service_account: |-
+    $ESCAPED_JSON
+EOF
+
+  echo "✅ Updated $CONFIG_FILE with the service account key."
+
+  kubectl create secret generic thanos --from-file=thanos.yaml=$CONFIG_FILE --namespace $NAMESPACE
 
   kubectl apply -n $NAMESPACE -f - <<EOF
 apiVersion: apps/v1
@@ -737,7 +533,6 @@ spec:
       port: 10902
       targetPort: 10902
   type: ClusterIP
-
 EOF
 
   kubectl apply -n $NAMESPACE -f - <<EOF
@@ -762,7 +557,7 @@ spec:
         args:
           - store
           - --data-dir=/data
-          - --objstore.config-file=/etc/thanos/object-store.yaml
+          - --objstore.config-file=/etc/thanos/$CONFIG_FILE
           - --index-cache-size=500MB
           - --chunk-pool-size=2GB
         ports:
@@ -796,32 +591,30 @@ spec:
   type: ClusterIP
 EOF
 
-  # 5. Prepare Helm values for Prometheus with S3 storage
   PROMETHEUS_STORAGE_CLASS=$(cat <<EOF
-
 prometheus:
   prometheusSpec:
     retention: 24h 
-    retentionSize: 10GB
+    retentionSize: 10GB 
     storageSpec:
       volumeClaimTemplate:
         spec:
-          storageClassName: gp3-sc
+          storageClassName: standard
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:
-              storage: 10Gi
+              storage: 10Gi 
 
     thanos:
+      enable: true
       objectStorageConfig:
         existingSecret:
           name: thanos
-          key: object-store.yaml
+          key: $CONFIG_FILE
       image: quay.io/thanos/thanos:v0.28.1
-
 EOF
 )
-  if [ "$NODE_PLACEMENT" = "NodeSelector" ]; then
+if [ "$NODE_PLACEMENT" = "NodeSelector" ]; then
         PROMETHEUS_STORAGE_CLASS+=$(cat <<EOF
 
     nodeSelector:
@@ -832,7 +625,7 @@ EOF
 
       if [ "$NODE_PLACEMENT" = "NodeAffinity" ]; then
         PROMETHEUS_STORAGE_CLASS+=$(cat <<EOF
-  
+
     affinity:
       nodeAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
@@ -848,7 +641,7 @@ EOF
 
       if [ "$NODE_PLACEMENT" = "TaintsAndTolerations" ]; then
         PROMETHEUS_STORAGE_CLASS+=$(cat <<EOF
-  
+
     tolerations:
       - key: $TAINT_KEY
         operator: "Equal"
@@ -865,33 +658,32 @@ EOF
                     - $NODE_AFFINITY_VALUE_TT
 EOF
 )
-      fi
-
-  echo "Prometheus with S3 storage using IRSA has been configured successfully!"
+fi
 }
 
 configure_prometheus_storage() {
-
   case $PROMETHEUS_STORAGE_CHOICE in
     1)
-      PR_PV_SIZE_ST=$(aws ec2 describe-volumes --volume-ids $PR_PV_ID_ST --query "Volumes[0].Size" --output text)
-      echo "The size of volume $PR_PV_ID_ST is ${PR_PV_SIZE_ST}GiB"
+      PR_PV_SIZE_ST=$(gcloud compute disks describe "$PR_PV_ID_ST" \
+        --project="$PROJECT_ID" \
+        --zone="$REGION" \
+        --format="value(sizeGb)")
       kubectl apply -n $NAMESPACE -f - <<EOF
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: $PR_PV_NAME_ST
+  name: ${PR_PV_NAME_ST}  
+  labels:
+    type: prometheus-storage
 spec:
   capacity:
     storage: ${PR_PV_SIZE_ST}Gi
-  volumeMode: Filesystem
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: gp3-sc
-  csi:
-    driver: ebs.csi.aws.com
-    volumeHandle: $PR_PV_ID_ST
+  storageClassName: gke-storage-class
+  gcePersistentDisk:
+    pdName: ${PR_PV_ID_ST}
     fsType: ext4
   claimRef:
     namespace: $NAMESPACE
@@ -906,15 +698,18 @@ prometheus:
         metadata:
           name: $PR_PVC_NAME_ST
         spec:
-          storageClassName: gp3-sc
-          accessModes:
-            - ReadWriteOnce
+          storageClassName: gke-storage-class
+          accessModes: ["ReadWriteOnce"]
           resources:
             requests:
               storage: ${PR_PV_SIZE_ST}Gi
-          volumeName: $PR_PV_NAME_ST
+          selector:
+            matchLabels:
+              type: prometheus-storage
 EOF
-)
+)  # Ensure the HEREDOC closes correctly
+
+      # Node Selector Handling
       if [ "$NODE_PLACEMENT" = "NodeSelector" ]; then
         PROMETHEUS_STORAGE_CLASS+=$(cat <<EOF
 
@@ -924,6 +719,7 @@ EOF
 )
       fi
 
+      # Node Affinity Handling
       if [ "$NODE_PLACEMENT" = "NodeAffinity" ]; then
         PROMETHEUS_STORAGE_CLASS+=$(cat <<EOF
 
@@ -938,8 +734,9 @@ EOF
                     - $NODE_AFFINITY_VALUE
 EOF
 )
-      fi
+      fi  # Make sure the 'fi' closes correctly
 
+      # Taints and Tolerations Handling
       if [ "$NODE_PLACEMENT" = "TaintsAndTolerations" ]; then
         PROMETHEUS_STORAGE_CLASS+=$(cat <<EOF
 
@@ -959,10 +756,10 @@ EOF
                     - $NODE_AFFINITY_VALUE_TT
 EOF
 )
-      fi
+      fi  # Closing condition for `TaintsAndTolerations`
       ;;
-    2)
 
+    2)
       PROMETHEUS_STORAGE_CLASS=$(cat <<EOF
 prometheus:
   prometheusSpec:
@@ -971,15 +768,15 @@ prometheus:
         metadata:
           name: $PR_PVC_NAME_DY
         spec:
-          storageClassName: gp3-sc
-          accessModes:
-            - ReadWriteOnce
+          storageClassName: gke-storage-class
+          accessModes: ["ReadWriteOnce"]
           resources:
             requests:
-              storage: ${PR_PV_SIZE_DY}
+              storage: ${PR_PV_SIZE_DY}Gi
 EOF
-      )
+      )  # Ensure EOF is correctly placed
 
+      # Node Selector Handling
       if [ "$NODE_PLACEMENT" = "NodeSelector" ]; then
         PROMETHEUS_STORAGE_CLASS+=$(cat <<EOF
 
@@ -989,6 +786,7 @@ EOF
 )
       fi
 
+      # Node Affinity Handling
       if [ "$NODE_PLACEMENT" = "NodeAffinity" ]; then
         PROMETHEUS_STORAGE_CLASS+=$(cat <<EOF
 
@@ -1005,6 +803,7 @@ EOF
 )
       fi
 
+      # Taints and Tolerations Handling
       if [ "$NODE_PLACEMENT" = "TaintsAndTolerations" ]; then
         PROMETHEUS_STORAGE_CLASS+=$(cat <<EOF
 
@@ -1026,44 +825,47 @@ EOF
 )
       fi
       ;;
-      3)
-        configure_s3_storage
+
+    3)
+      configure_GCS_bucket_storage
       ;;
-      4)
-        echo "No Storage Required"
+    4)
+      echo "No Storage Required"
       ;;
     *)
-      echo "Invalid choice. Exiting."
+      echo "Invalid storage choice"
       exit 1
       ;;
   esac
 }
 
-configure_grafana_storage() {
-
+configure_grafana_storage (){
   case $STORAGE_CHOICE in
     1)
-      PV_SIZE_ST=$(aws ec2 describe-volumes --volume-ids $PV_ID_ST --query "Volumes[0].Size" --output text)
-      echo "The size of volume $PV_ID_ST is ${PV_SIZE_ST}GiB"
-      kubectl apply -n $NAMESPACE -f - <<EOF
+    PV_SIZE_ST=$(gcloud compute disks describe "$PV_ID_ST" \
+        --project="$PROJECT_ID" \
+        --zone="$REGION" \
+        --format="value(sizeGb)")
+    kubectl apply -n $NAMESPACE -f - <<EOF
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: $PV_NAME_ST
+  name: ${PV_NAME_ST}  
+  labels:
+    type: prometheus-storage
 spec:
   capacity:
-    storage: "${PV_SIZE_ST}Gi"
-  volumeMode: Filesystem
+    storage: ${PV_SIZE_ST}Gi
   accessModes:
     - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Retain 
-  storageClassName: gp3-sc
-  awsElasticBlockStore:
-    volumeID: $PV_ID_ST
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: gke-storage-class
+  gcePersistentDisk:
+    pdName: ${PV_ID_ST}
     fsType: ext4
 EOF
 
-      kubectl apply -n $NAMESPACE -f - <<EOF
+  kubectl apply -n $NAMESPACE -f - <<EOF
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -1071,13 +873,14 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: gp3-sc 
   resources:
     requests:
       storage: ${PV_SIZE_ST}Gi
+  storageClassName: gke-storage-class
+  volumeName: $PV_NAME_ST
 EOF
 
-      STORAGE_CLASS=$(cat <<EOF
+  STORAGE_CLASS=$(cat <<EOF
 grafana:
   persistence:
     enabled: true
@@ -1085,29 +888,27 @@ grafana:
     accessModes:
       - ReadWriteOnce
     size: ${PV_SIZE_ST}Gi
-    storageClassName: gp3-sc
+    storageClassName: gke-storage-class
     existingClaim: $PVC_NAME_ST
-
   extraVolumes:
     - name: grafana-storage
       persistentVolumeClaim:
         claimName: $PVC_NAME_ST
-
   extraVolumeMounts:
     - name: grafana-storage
       mountPath: /tmp
 EOF
 )
-      if [ "$NODE_PLACEMENT" = "NodeSelector" ]; then
+    if [ "$NODE_PLACEMENT" = "NodeSelector" ]; then
         STORAGE_CLASS+=$(cat <<EOF
 
   nodeSelector:
     $NODE_SELECTOR_KEY: $NODE_SELECTOR_VALUE
 EOF
 )
-      fi
+    fi
 
-      if [ "$NODE_PLACEMENT" = "NodeAffinity" ]; then
+    if [ "$NODE_PLACEMENT" = "NodeAffinity" ]; then
         STORAGE_CLASS+=$(cat <<EOF
 
   affinity:
@@ -1115,38 +916,38 @@ EOF
       requiredDuringSchedulingIgnoredDuringExecution:
         nodeSelectorTerms:
           - matchExpressions:
-              - key: $NODE_AFFINITY_KEY
+              - key: "$NODE_AFFINITY_KEY"
                 operator: "In"
                 values:
-                  - $NODE_AFFINITY_VALUE
+                  - "$NODE_AFFINITY_VALUE"
 EOF
 )
-      fi
+    fi
 
-      if [ "$NODE_PLACEMENT" = "TaintsAndTolerations" ]; then
+    if [ "$NODE_PLACEMENT" = "TaintsAndTolerations" ]; then
         STORAGE_CLASS+=$(cat <<EOF
 
   tolerations:
-    - key: $TAINT_KEY
+    - key: "$TAINT_KEY"
       operator: "Equal"
-      value: $TAINT_VALUE
-      effect: $TAINT_EFFECT
+      value: "$TAINT_VALUE"
+      effect: "$TAINT_EFFECT"
   affinity:
     nodeAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
         nodeSelectorTerms:
           - matchExpressions:
-              - key: $NODE_AFFINITY_KEY_TT
+              - key: "$NODE_AFFINITY_KEY_TT"
                 operator: "In"
                 values:
-                  - $NODE_AFFINITY_VALUE_TT
+                  - "$NODE_AFFINITY_VALUE_TT"
 EOF
 )
-      fi
-      ;;
-    2)
+    fi
+    ;;
 
-      kubectl apply -n $NAMESPACE -f - <<EOF
+    2)
+    kubectl apply -n $NAMESPACE -f - <<EOF
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -1154,13 +955,13 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: gp3-sc
   resources:
     requests:
       storage: ${PV_SIZE_DY}Gi
+  storageClassName: gke-storage-class
 EOF
 
-      STORAGE_CLASS=$(cat <<EOF
+  STORAGE_CLASS=$(cat <<EOF
 grafana:
   persistence:
     enabled: true
@@ -1168,30 +969,27 @@ grafana:
     accessModes:
       - ReadWriteOnce
     size: ${PV_SIZE_DY}Gi
-    storageClassName: gp3-sc
+    storageClassName: gke-storage-class
     existingClaim: $PVC_NAME_DY
-
   extraVolumes:
     - name: grafana-storage
       persistentVolumeClaim:
         claimName: $PVC_NAME_DY
-
   extraVolumeMounts:
     - name: grafana-storage
       mountPath: /tmp
 EOF
-      )
-
-      if [ "$NODE_PLACEMENT" = "NodeSelector" ]; then
+)
+    if [ "$NODE_PLACEMENT" = "NodeSelector" ]; then
         STORAGE_CLASS+=$(cat <<EOF
 
   nodeSelector:
     $NODE_SELECTOR_KEY: $NODE_SELECTOR_VALUE
 EOF
 )
-      fi
+    fi
 
-      if [ "$NODE_PLACEMENT" = "NodeAffinity" ]; then
+    if [ "$NODE_PLACEMENT" = "NodeAffinity" ]; then
         STORAGE_CLASS+=$(cat <<EOF
 
   affinity:
@@ -1199,42 +997,43 @@ EOF
       requiredDuringSchedulingIgnoredDuringExecution:
         nodeSelectorTerms:
           - matchExpressions:
-              - key: $NODE_AFFINITY_KEY
+              - key: "$NODE_AFFINITY_KEY"
                 operator: "In"
                 values:
-                  - $NODE_AFFINITY_VALUE
+                  - "$NODE_AFFINITY_VALUE"
 EOF
 )
-      fi
+    fi
 
-      if [ "$NODE_PLACEMENT" = "TaintsAndTolerations" ]; then
+    if [ "$NODE_PLACEMENT" = "TaintsAndTolerations" ]; then
         STORAGE_CLASS+=$(cat <<EOF
 
   tolerations:
-    - key: $TAINT_KEY
+    - key: "$TAINT_KEY"
       operator: "Equal"
-      value: $TAINT_VALUE
-      effect: $TAINT_EFFECT
+      value: "$TAINT_VALUE"
+      effect: "$TAINT_EFFECT"
   affinity:
     nodeAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
         nodeSelectorTerms:
           - matchExpressions:
-              - key: $NODE_AFFINITY_KEY_TT
+              - key: "$NODE_AFFINITY_KEY_TT"
                 operator: "In"
                 values:
-                  - $NODE_AFFINITY_VALUE_TT
+                  - "$NODE_AFFINITY_VALUE_TT"
 EOF
 )
-      fi
+    fi
+    ;;
+
+    3)
+      echo "No Storage Required"
+    ;;
+    *)
+      echo "Invalid storage choice"
+      exit 1
       ;;
-      3)
-        echo "No Storage Required"
-      ;;
-      *)
-        echo "Invalid choice. Exiting."
-        exit 1
-        ;;
   esac
 }
 
@@ -1306,19 +1105,18 @@ patch_service() {
   fi
 }
 
-main (){
+main () {
+  configure_GKE_auth
   install_dependencies
-  connect_to_eks_cluster
-  ebs_csi_controller_setup
   create_namespace
-  storageclass
+  check_and_add_helm_repo
   configure_node_placement
+  storageclass
   configure_grafana_storage
   configure_prometheus_storage
-  check_and_add_helm_repo
   deploy_prometheus
   patch_service
-  echo "** Setup completed! **"
+  echo "** Script Completed **"
 }
 
 main

@@ -874,7 +874,8 @@ configure_prometheus_storage() {
 
   case $PROMETHEUS_STORAGE_CHOICE in
     1)
-
+      PR_PV_SIZE_ST=$(aws ec2 describe-volumes --volume-ids $PR_PV_ID_ST --query "Volumes[0].Size" --output text)
+      echo "The size of volume $PR_PV_ID_ST is ${PR_PV_SIZE_ST}GiB"
       kubectl apply -n $NAMESPACE -f - <<EOF
 apiVersion: v1
 kind: PersistentVolume
@@ -1042,7 +1043,8 @@ configure_grafana_storage() {
 
   case $STORAGE_CHOICE in
     1)
-
+      PV_SIZE_ST=$(aws ec2 describe-volumes --volume-ids $PV_ID_ST --query "Volumes[0].Size" --output text)
+      echo "The size of volume $PV_ID_ST is ${PV_SIZE_ST}GiB"
       kubectl apply -n $NAMESPACE -f - <<EOF
 apiVersion: v1
 kind: PersistentVolume
