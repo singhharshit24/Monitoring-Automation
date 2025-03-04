@@ -2,11 +2,47 @@
 
 {% block title %}EKS Observability Setup{% endblock %}
 
+{% block additional_css %}
+<style>
+    .numeric-input {
+        width: 200px;
+        padding: 8px 12px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    /* Style the spinner buttons */
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+        opacity: 1;
+        height: 30px;
+        cursor: pointer;
+    }
+
+    /* Optional: Add focus state */
+    .numeric-input:focus {
+        outline: none;
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, .25);
+    }
+
+    .card-container {
+        transition: transform 0.2s ease-in-out;
+    }
+
+    .card-container:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 
 <h1 class="title">🔍 Observability on <span>EKS</span> 🚀</h1>
 <div class="form-wrapper">
-    <form id="configForm">
+    <form id="configForm" class="card-container">
         <!-- Mandatory Fields Section -->
         <div class="section">
             <h3>🔹 Mandatory Configuration</h3>
@@ -20,7 +56,7 @@
         </div>
     </form>
 
-    <form id="configForm1">
+    <form id="configForm1" class="card-container">
         <!-- Node Strategy Selection -->
         <div class="section">
             <h3>📌 Node Placement Strategy</h3>
@@ -80,7 +116,7 @@
         </div>
     </form>
 
-    <form id="configForm2">
+    <form id="configForm2" class="card-container">
         <!-- Grafana Storage Function -->
         <div class="section">
             <h3>🗄️ Grafana Storage</h3>
@@ -112,13 +148,14 @@
                     placeholder="Enter PVC Name for Dynamic EBS Volume">
 
                 <label for="PV_SIZE_DY">PV Size</label>
-                <input type="text" id="PV_SIZE_DY" name="PV_SIZE_DY"
+                <input type="number" id="PV_SIZE_DY" name="PV_SIZE_DY" min="1" max="16384" value="1"
+                    class="form-control numeric-input"
                     placeholder="Enter Size of EBS Volume in GBs for Dynamic EBS Volume">
             </div>
         </div>
     </form>
 
-    <form id="configForm3">
+    <form id="configForm3" class="card-container">
 
         <!-- Prometheus Storage Function -->
         <div class="section">
@@ -152,9 +189,9 @@
                 <input type="text" id="PR_PVC_NAME_DY" name="PR_PVC_NAME_DY"
                     placeholder="Enter PVC Name for Dynamic EBS Volume">
 
-                <label for="PR_PV_SIZE_DY">PV Size</label>
-                <input type="text" id="PR_PV_SIZE_DY" name="PR_PV_SIZE_DY"
-                    placeholder="Enter Size of EBS Volume in GBs for Dynamic EBS Volume">
+                <label for="PR_PV_SIZE_DY">PV Size (GB)</label>
+                <input type="number" id="PR_PV_SIZE_DY" name="PR_PV_SIZE_DY" min="1" max="16384" value="1"
+                    class="form-control numeric-input" placeholder="Enter Size of EBS Volume in GBs">
             </div>
 
             <!-- S3 Storage -->
