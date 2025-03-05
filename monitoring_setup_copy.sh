@@ -976,7 +976,7 @@ prometheus:
             - ReadWriteOnce
           resources:
             requests:
-              storage: ${PR_PV_SIZE_DY}
+              storage: ${PR_PV_SIZE_DY}Gi
 EOF
       )
 
