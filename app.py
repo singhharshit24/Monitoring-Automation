@@ -1,12 +1,17 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, Response
 import subprocess
+from pathlib import Path
 import os
+import time
+import json
 
 app = Flask(__name__)
 VARIABLES_FILE = "variables.sh"
 GKE_VARIABLES_FILE = "gke-variables.sh"
 SETUP_SCRIPT = "monitoring_setup.sh"
 GKE_SETUP_SCRIPT = "gke_monitoring_setup.sh"
+# GKE_SETUP_SCRIPT = "test.sh"
+deployment_progress = {"progress": 0, "status": "Initializing..."}
 
 def read_variables(var_file):
     """Read variables from variables.sh and return them as a dictionary."""
@@ -37,40 +42,51 @@ def write_variables(updated_vars, var_file):
 
 def run_setup(script_file):
     try:
-        # Get absolute path
-        script_path = os.path.abspath(script_file)
+        script_path = Path(script_file)
+        
+        # Check if script exists
+        if not script_path.exists():
+            return {
+                "success": False,
+                "message": f"❌ Script not found: {script_file}"
+            }
 
-        # Ensure script exists
-        if not os.path.exists(script_path):
-            return {"message": f"❌ Error: Script not found at {script_path}"}, 500
-
-        # Make sure the script is executable
-        os.chmod(script_path, 0o755)
-
-        # Run script and print output in real-time
-        process = subprocess.Popen(
-            [script_path],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+        # Make script executable
+        script_path.chmod(0o755)
+        
+        # Execute the script
+        result = subprocess.run(
+            [str(script_path.absolute())],
+            check=True,
+            capture_output=True,
             text=True
         )
-
-        # Read and print output live
-        output_lines = []
-        for line in iter(process.stdout.readline, ""):
-            print(line, end="")  # Print to terminal
-            output_lines.append(line.strip())  # Store for API response
-
-        # Wait for process to complete
-        process.wait()
-
-        if process.returncode != 0:
-            return {"message": f"❌ Deployment failed: {process.stderr.read()}"}, 500
-
-        return {"message": "✅ Deployment successful!", "output": output_lines}
-
+        
+        # Check if script executed successfully
+        if result.returncode == 0:
+            return {
+                "success": True,
+                "message": "✅ Script executed successfully!"
+            }
+        else:
+            return {
+                "success": False,
+                "message": f"❌ Script execution failed: {result.stderr}"
+            }
+    
+    except subprocess.CalledProcessError as e:
+        print(f"Script execution failed: {e.stderr}")
+        return {
+            "success": False,
+            "message": f"❌ Script execution failed: {e.stderr}"
+        }
+    
     except Exception as e:
-        return {"message": f"❌ Unexpected error: {str(e)}"}, 500
+        print(f"Unexpected error: {str(e)}")
+        return {
+            "success": False,
+            "message": f"❌ Unexpected error: {str(e)}"
+        }
 
 @app.route("/")
 def index():
@@ -90,27 +106,79 @@ def gke_form():
 def decumentation():
     return render_template("documentation.html")
 
+@app.route('/deployment-progress')
+def deployment_progress():
+    def generate():
+        while deployment_progress["progress"] < 100:
+            yield f"data: {json.dumps(deployment_progress)}\n\n"
+            time.sleep(0.5)
+    return Response(generate(), mimetype='text/event-stream')
+
 @app.route("/deploy", methods=["POST"])
 def deploy():
-    """Update variables and execute the monitoring-setup.sh script."""
+    global deployment_progress
     try:
+        deployment_progress = {"progress": 0, "status": "Initializing deployment..."}
+        
+        # Update variables
+        deployment_progress = {"progress": 20, "status": "Updating configuration..."}
         updated_vars = {key: request.form[key] for key in request.form}
-        write_variables(updated_vars, VARIABLES_FILE)  # Ensure this writes correctly
+        write_variables(updated_vars, VARIABLES_FILE)
 
-        return jsonify(run_setup(f"./{SETUP_SCRIPT}"))
+        deployment_progress = {"progress": 40, "status": "Preparing deployment..."}
+        
+        # Run setup script
+        deployment_progress = {"progress": 60, "status": "Executing deployment script..."}
+        result = run_setup(GKE_SETUP_SCRIPT)
+        
+        deployment_progress = {"progress": 100, "status": "Deployment completed successfully!"}
+        
+        # Make sure to return success: True in the response
+        return jsonify({
+            "success": True,
+            "message": "Configuration updated and deployment completed successfully!"
+        })
+
     except Exception as e:
-        return jsonify({"message": f"❌ Failed to update configuration: {str(e)}"}), 500
+        deployment_progress = {"progress": 100, "status": "Deployment failed!"}
+        print(f"Error during deployment: {str(e)}")
+        return jsonify({
+            "success": False,
+            "message": f"❌ Failed to update configuration: {str(e)}"
+        }), 500
 
 @app.route("/gke-deploy", methods=["POST"])
 def gke_deploy():
-    """Update variables and execute the gke-monitoring-setup.sh script."""
+    global deployment_progress
     try:
+        deployment_progress = {"progress": 0, "status": "Initializing deployment..."}
+        
+        # Update variables
+        deployment_progress = {"progress": 20, "status": "Updating configuration..."}
         updated_vars = {key: request.form[key] for key in request.form}
-        write_variables(updated_vars, GKE_VARIABLES_FILE)  # Ensure this writes correctly
+        write_variables(updated_vars, GKE_VARIABLES_FILE)
 
-        return jsonify(run_setup(f"./{GKE_SETUP_SCRIPT}"))
+        deployment_progress = {"progress": 40, "status": "Preparing deployment..."}
+        
+        # Run setup script
+        deployment_progress = {"progress": 60, "status": "Executing deployment script..."}
+        result = run_setup(GKE_SETUP_SCRIPT)
+        
+        deployment_progress = {"progress": 100, "status": "Deployment completed successfully!"}
+        
+        # Make sure to return success: True in the response
+        return jsonify({
+            "success": True,
+            "message": "Configuration updated and deployment completed successfully!"
+        })
+
     except Exception as e:
-        return jsonify({"message": f"❌ Failed to update configuration: {str(e)}"}), 500
+        deployment_progress = {"progress": 100, "status": "Deployment failed!"}
+        print(f"Error during deployment: {str(e)}")
+        return jsonify({
+            "success": False,
+            "message": f"❌ Failed to update configuration: {str(e)}"
+        }), 500
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=7000, debug=True)
