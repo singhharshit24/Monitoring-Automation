@@ -9,8 +9,8 @@ app = Flask(__name__)
 VARIABLES_FILE = "variables.sh"
 GKE_VARIABLES_FILE = "gke-variables.sh"
 SETUP_SCRIPT = "monitoring_setup.sh"
-# GKE_SETUP_SCRIPT = "gke_monitoring_setup.sh"
-GKE_SETUP_SCRIPT="test.sh"
+GKE_SETUP_SCRIPT = "gke_monitoring_setup.sh"
+# GKE_SETUP_SCRIPT="test.sh"
 deployment_progress = {"progress": 0, "status": "Initializing..."}
 
 def read_variables(var_file):
@@ -129,7 +129,7 @@ def deploy():
         
         # Run setup script
         deployment_progress = {"progress": 60, "status": "Executing deployment script..."}
-        result = run_setup(GKE_SETUP_SCRIPT)
+        result = run_setup(SETUP_SCRIPT)
         
         deployment_progress = {"progress": 100, "status": "Deployment completed successfully!"}
         

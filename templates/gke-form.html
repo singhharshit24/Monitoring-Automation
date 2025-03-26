@@ -116,9 +116,90 @@
         background-color: #e7f3ff;
         transition: transform 0.2s ease-in-out;
     }
+
     .progress-container:hover {
         transform: translateY(-3px);
         box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .info-icon {
+        position: relative;
+        cursor: help;
+    }
+
+    /* Custom CSS info icon */
+    .info-icon .icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        background-color: #6c757d;
+        color: white;
+        border-radius: 50%;
+        font-size: 11px;
+        font-style: italic;
+        font-family: serif;
+        font-weight: bold;
+        transition: background-color 0.3s ease;
+        margin-left: 5px;
+    }
+
+    .info-icon:hover .icon {
+        background-color: #0056b3;
+    }
+
+    /* Tooltip styling */
+    .info-icon::before {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%) translateY(-8px);
+        padding: 8px 12px;
+        background-color: #333;
+        color: white;
+        font-size: 12px;
+        border-radius: 4px;
+        white-space: nowrap;
+        visibility: hidden;
+        opacity: 0;
+        transition: all 0.3s ease;
+        z-index: 1000;
+        min-width: max-content;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Show tooltip on hover */
+    .info-icon:hover::before,
+    .info-icon:hover::after {
+        visibility: visible;
+        opacity: 1;
+        transform: translateX(0) translateY(0);
+    }
+
+    /* Ensure the icon is properly centered */
+    .info-icon {
+        display: inline-flex;
+        align-items: center;
+    }
+
+    /* Add focus styles for accessibility */
+    .info-icon:focus-within .icon {
+        background-color: #0056b3;
+        outline: 2px solid #0056b3;
+        outline-offset: 2px;
+    }
+
+    /* Optional: Add a subtle animation on hover */
+    .info-icon .icon {
+        transform: scale(1);
+        transition: transform 0.2s ease, background-color 0.3s ease;
+    }
+
+    .info-icon:hover .icon {
+        transform: scale(1.1);
     }
 </style>
 {% endblock %}
@@ -131,14 +212,146 @@
 
         <!-- Mandatory Fields Section -->
         <div class="section">
-            <h3>🔹 Mandatory Configuration</h3>
+            <!-- <h3>🔹 Mandatory Configuration</h3>
             {% for key in variables.keys() %}
             {% if key in ['PROJECT_ID', 'NAMESPACE', 'CLUSTER_NAME', 'REGION', 'PROMETHEUS_VERSION',
             'LABEL_KEY', 'LABEL_VALUE'] %}
             <label for="{{ key }}">{{ key.replace('_', ' ').title() }}</label>
             <input type="text" id="{{ key }}" name="{{ key }}" placeholder="Enter {{ key.replace('_', ' ').lower() }}">
             {% endif %}
-            {% endfor %}
+            {% endfor %} -->
+            <h3>🔹 Mandatory Configuration</h3>
+
+            <!-- Project ID -->
+            <div class="form-group">
+                <div class="info-icon" data-tooltip="The unique identifier of your Google Cloud Project">
+                    <label for="PROJECT_ID">Project ID</label>
+                    <span class="icon">i</span>
+                </div>
+                <input type="text" class="form-control" id="PROJECT_ID" name="PROJECT_ID"
+                    placeholder="Enter your GCP project ID" required>
+            </div>
+
+            <!-- Namespace -->
+            <div class="form-group">
+                <div class="info-icon"
+                    data-tooltip="If the provided namespace is not found in the cluster, it will be automatically created.">
+                    <label for="NAMESPACE">Namespace</label>
+                    <span class="icon">i</span>
+                </div>
+                <input type="text" class="form-control" id="NAMESPACE" name="NAMESPACE"
+                    placeholder="Enter namespace name" required>
+            </div>
+
+            <!-- Cluster Name -->
+            <div class="form-group">
+                <div class="info-icon"
+                    data-tooltip="This tool does not create a new cluster. Please provide the correct cluster name for the specified region.">
+                    <label for="CLUSTER_NAME">Cluster Name</label>
+                    <span class="icon">i</span>
+                </div>
+                <input type="text" class="form-control" id="CLUSTER_NAME" name="CLUSTER_NAME"
+                    placeholder="Enter GKE cluster name" required>
+            </div>
+
+            <!-- Region -->
+            <div class="form-group">
+                <div class="info-icon" data-tooltip="Select the GCP zone where your cluster is deployed">
+                    <label for="REGION">Region & Zone</label>
+                    <span class="icon">i</span>
+                </div>
+                <select class="form-control" id="REGION" name="REGION" required>
+                    <option value="">Select a zone</option>
+                    <optgroup label="us-central1 (Iowa)">
+                        <option value="us-central1-a">us-central1-a</option>
+                        <option value="us-central1-b">us-central1-b</option>
+                        <option value="us-central1-c">us-central1-c</option>
+                        <option value="us-central1-f">us-central1-f</option>
+                    </optgroup>
+                    <optgroup label="us-east1 (South Carolina)">
+                        <option value="us-east1-b">us-east1-b</option>
+                        <option value="us-east1-c">us-east1-c</option>
+                        <option value="us-east1-d">us-east1-d</option>
+                    </optgroup>
+                    <optgroup label="us-east4 (Northern Virginia)">
+                        <option value="us-east4-a">us-east4-a</option>
+                        <option value="us-east4-b">us-east4-b</option>
+                        <option value="us-east4-c">us-east4-c</option>
+                    </optgroup>
+                    <optgroup label="us-west1 (Oregon)">
+                        <option value="us-west1-a">us-west1-a</option>
+                        <option value="us-west1-b">us-west1-b</option>
+                        <option value="us-west1-c">us-west1-c</option>
+                    </optgroup>
+                    <optgroup label="europe-west1 (Belgium)">
+                        <option value="europe-west1-b">europe-west1-b</option>
+                        <option value="europe-west1-c">europe-west1-c</option>
+                        <option value="europe-west1-d">europe-west1-d</option>
+                    </optgroup>
+                    <optgroup label="europe-west2 (London)">
+                        <option value="europe-west2-a">europe-west2-a</option>
+                        <option value="europe-west2-b">europe-west2-b</option>
+                        <option value="europe-west2-c">europe-west2-c</option>
+                    </optgroup>
+                    <optgroup label="asia-east1 (Taiwan)">
+                        <option value="asia-east1-a">asia-east1-a</option>
+                        <option value="asia-east1-b">asia-east1-b</option>
+                        <option value="asia-east1-c">asia-east1-c</option>
+                    </optgroup>
+                    <optgroup label="asia-southeast1 (Singapore)">
+                        <option value="asia-southeast1-a">asia-southeast1-a</option>
+                        <option value="asia-southeast1-b">asia-southeast1-b</option>
+                        <option value="asia-southeast1-c">asia-southeast1-c</option>
+                    </optgroup>
+                    <optgroup label="asia-south1 (Mumbai)">
+                        <option value="asia-south1-a">asia-south1-a</option>
+                        <option value="asia-south1-b">asia-south1-b</option>
+                        <option value="asia-south1-c">asia-south1-c</option>
+                    </optgroup>
+                    <optgroup label="australia-southeast1 (Sydney)">
+                        <option value="australia-southeast1-a">australia-southeast1-a</option>
+                        <option value="australia-southeast1-b">australia-southeast1-b</option>
+                        <option value="australia-southeast1-c">australia-southeast1-c</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <!-- Prometheus Version -->
+            <div class="form-group">
+                <div class="info-icon" data-tooltip="Available versions of the kube-prometheus-stack Helm chart">
+                    <label for="PROMETHEUS_VERSION">Prometheus Version</label>
+                    <span class="icon">i</span>
+                </div>
+                <input type="text" id="PROMETHEUS_VERSION" name="PROMETHEUS_VERSION" placeholder="Enter prometheus version">
+                <!-- <select class="form-control" id="PROMETHEUS_VERSION" name="PROMETHEUS_VERSION" required>
+                    <option value="">Select Prometheus Version</option>
+                    {% for version in prometheus_versions %}
+                    <option value="{{ version.chart_version }}">
+                        {{ version.chart_version }} (App: {{ version.app_version }})
+                    </option>
+                    {% endfor %}
+                </select> -->
+            </div>
+
+            <!-- Label Key -->
+            <!-- <div class="form-group">
+                <div class="info-icon" data-tooltip="Kubernetes Node Pool label key for deployment setup">
+                    <label for="LABEL_KEY">Label Key</label>
+                    <span class="icon">i</span>
+                </div>
+                <input type="text" class="form-control" id="LABEL_KEY" name="LABEL_KEY" placeholder="Enter label key"
+                    required>
+            </div> -->
+
+            <!-- Label Value -->
+            <!-- <div class="form-group">
+                <div class="info-icon" data-tooltip="Kubernetes Node Pool label value for deployment setup">
+                    <label for="LABEL_VALUE">Label Value</label>
+                    <span class="icon">i</span>
+                </div>
+                <input type="text" class="form-control" id="LABEL_VALUE" name="LABEL_VALUE"
+                    placeholder="Enter label value" required>
+            </div> -->
         </div>
     </form>
 
@@ -146,7 +359,11 @@
         <!-- Node Strategy Selection -->
         <div class="section">
             <h3>📌 Node Placement Strategy</h3>
-            <label for="NODE_STRATEGY">Select a Node Placement strategy:</label>
+            <div class="info-icon"
+                data-tooltip="Select a strategy to define how nodes are assigned for deployment: Node Selector, Node Affinity, Taints and Tolerations, or No Node Placement.">
+                <label for="NODE_STRATEGY">Select a Node Placement strategy:</label>
+                <span class="icon">i</span>
+            </div>
             <select id="NODE_STRATEGY" name="NODE_STRATEGY" onchange="toggleNodeFields()">
                 <option value="4">No Node Placement</option>
                 <option value="1">Node Selector</option>
@@ -206,7 +423,11 @@
         <!-- Grafana Storage Function -->
         <div class="section">
             <h3>🗄️ Grafana Storage</h3>
-            <label for="STORAGE_CHOICE">Select Grafana Storage Choice</label>
+            <div class="info-icon"
+                data-tooltip="Configure storage for Grafana, choosing between persistent volume or dynamic provisioning to retain dashboards and settings.">
+                <label for="STORAGE_CHOICE">Select Grafana Storage Choice</label>
+                <span class="icon">i</span>
+            </div>
             <select id="STORAGE_CHOICE" name="STORAGE_CHOICE" onchange="toggleStorageFields()">
                 <option value="3">No Storage Required</option>
                 <option value="1">Static Persistent Disk</option>
@@ -223,7 +444,11 @@
                 <input type="text" id="PVC_NAME_ST" name="PVC_NAME_ST"
                     placeholder="Enter Persistent Volume Claim Name for Static Persistent Disk">
 
-                <label for="PV_ID_ST">Disk Name</label>
+                <div class="info-icon"
+                    data-tooltip="The disk must be pre-created in GCP, and the provided name should match the existing disk.">
+                    <label for="PV_ID_ST">Disk Name</label>
+                    <span class="icon">i</span>
+                </div>
                 <input type="text" id="PV_ID_ST" name="PV_ID_ST" placeholder="Enter name of Disk created">
             </div>
 
@@ -233,7 +458,7 @@
                 <input type="text" id="PVC_NAME_DY" name="PVC_NAME_DY"
                     placeholder="Enter PVC Name for Dynamic Persistent Disk">
 
-                <label for="PV_SIZE_DY">PV Size</label>
+                <label for="PV_SIZE_DY">PV Size (in Gi)</label>
                 <input type="number" id="PV_SIZE_DY" name="PV_SIZE_DY" min="10" max="16384" value="10"
                     class="form-control numeric-input"
                     placeholder="Enter Size of EBS Volume in GBs for Dynamic Persistent Disk">
@@ -246,7 +471,11 @@
         <!-- Prometheus Storage Function -->
         <div class="section">
             <h3>📊 Prometheus Storage</h3>
-            <label for="PROMETHEUS_STORAGE_CHOICE">Select Prometheus Storage Choice</label>
+            <div class="info-icon"
+                data-tooltip="Set up storage for Prometheus to ensure long-term metric retention, using persistent volumes, dynamic provisioning, or GCS bucket storage for scalability and durability.">
+                <label for="PROMETHEUS_STORAGE_CHOICE">Select Prometheus Storage Choice</label>
+                <span class="icon">i</span>
+            </div>
             <select id="PROMETHEUS_STORAGE_CHOICE" name="PROMETHEUS_STORAGE_CHOICE"
                 onchange="togglePrometheusStorageFields()">
                 <option value="4">No Storage Required</option>
@@ -265,7 +494,11 @@
                 <input type="text" id="PR_PVC_NAME_ST" name="PR_PVC_NAME_ST"
                     placeholder="Enter Persistent Volume Claim Name for Static Persistent Disk">
 
-                <label for="PR_PV_ID_ST">Disk Name</label>
+                <div class="info-icon"
+                    data-tooltip="The disk must be pre-created in GCP, and the provided name should match the existing disk.">
+                    <label for="PR_PV_ID_ST">Disk Name</label>
+                    <span class="icon">i</span>
+                </div>
                 <input type="text" id="PR_PV_ID_ST" name="PR_PV_ID_ST" placeholder="Enter name of the Disk created">
             </div>
 
@@ -283,7 +516,11 @@
 
             <!-- GCS Storage -->
             <div id="gcsBucket" class="hidden">
-                <label for="BUCKET_NAME">GCS Bucket Name</label>
+                <div class="info-icon"
+                    data-tooltip="The GCS bucket must be pre-created in GCP, and the provided name should match the existing bucket.">
+                    <label for="BUCKET_NAME">GCS Bucket Name</label>
+                    <span class="icon">i</span>
+                </div>
                 <input type="text" id="BUCKET_NAME" name="BUCKET_NAME"
                     placeholder="Enter the name of the GCS bucket created">
             </div>

@@ -121,6 +121,86 @@
         transform: translateY(-3px);
         box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
     }
+
+    .info-icon {
+        position: relative;
+        cursor: help;
+    }
+
+    /* Custom CSS info icon */
+    .info-icon .icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        background-color: #6c757d;
+        color: white;
+        border-radius: 50%;
+        font-size: 11px;
+        font-style: italic;
+        font-family: serif;
+        font-weight: bold;
+        transition: background-color 0.3s ease;
+        margin-left: 5px;
+    }
+
+    .info-icon:hover .icon {
+        background-color: #0056b3;
+    }
+
+    /* Tooltip styling */
+    .info-icon::before {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%) translateY(-8px);
+        padding: 8px 12px;
+        background-color: #333;
+        color: white;
+        font-size: 12px;
+        border-radius: 4px;
+        white-space: nowrap;
+        visibility: hidden;
+        opacity: 0;
+        transition: all 0.3s ease;
+        z-index: 1000;
+        min-width: max-content;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Show tooltip on hover */
+    .info-icon:hover::before,
+    .info-icon:hover::after {
+        visibility: visible;
+        opacity: 1;
+        transform: translateX(0) translateY(0);
+    }
+
+    /* Ensure the icon is properly centered */
+    .info-icon {
+        display: inline-flex;
+        align-items: center;
+    }
+
+    /* Add focus styles for accessibility */
+    .info-icon:focus-within .icon {
+        background-color: #0056b3;
+        outline: 2px solid #0056b3;
+        outline-offset: 2px;
+    }
+
+    /* Optional: Add a subtle animation on hover */
+    .info-icon .icon {
+        transform: scale(1);
+        transition: transform 0.2s ease, background-color 0.3s ease;
+    }
+
+    .info-icon:hover .icon {
+        transform: scale(1.1);
+    }
 </style>
 {% endblock %}
 
@@ -131,14 +211,102 @@
     <form id="configForm" class="card-container">
         <!-- Mandatory Fields Section -->
         <div class="section">
-            <h3>🔹 Mandatory Configuration</h3>
+            <!-- <h3>🔹 Mandatory Configuration</h3>
             {% for key in variables.keys() %}
             {% if key in ['NAMESPACE', 'CLUSTER_NAME', 'REGION', 'PROMETHEUS_VERSION',
             'LABEL_KEY', 'LABEL_VALUE'] %}
             <label for="{{ key }}">{{ key.replace('_', ' ').title() }}</label>
             <input type="text" id="{{ key }}" name="{{ key }}" placeholder="Enter {{ key.replace('_', ' ').lower() }}">
             {% endif %}
-            {% endfor %}
+            {% endfor %} -->
+
+            <h3>🔹 Mandatory Configuration</h3>
+
+            <!-- Namespace Field -->
+            <div class="info-icon"
+                data-tooltip="If the provided namespace is not found in the cluster, it will be automatically created.">
+                <label for="NAMESPACE">Namespace</label>
+                <span class="icon">i</span>
+            </div>
+            <input type="text" id="NAMESPACE" name="NAMESPACE" placeholder="Enter namespace">
+
+            <!-- Cluster Name Field -->
+            <div class="info-icon"
+                data-tooltip="This tool does not create a new cluster. Please provide the correct cluster name for the specified region.">
+                <label for="CLUSTER_NAME">Cluster Name</label>
+                <span class="icon">i</span>
+            </div>
+            <input type="text" id="CLUSTER_NAME" name="CLUSTER_NAME" placeholder="Enter cluster name">
+
+            <!-- Region Field -->
+            <div class="info-icon" data-tooltip="Select the AWS Region where the cluster is located.">
+                <label for="REGION">Region</label>
+                <span class="icon">i</span>
+            </div>
+            <select class="form-control" id="REGION" name="REGION" required>
+                <option value="">Select a region</option>
+                
+                <optgroup label="North America">
+                    <option value="us-east-1">US East (N. Virginia) - us-east-1</option>
+                    <option value="us-east-2">US East (Ohio) - us-east-2</option>
+                    <option value="us-west-1">US West (N. California) - us-west-1</option>
+                    <option value="us-west-2">US West (Oregon) - us-west-2</option>
+                    <option value="ca-central-1">Canada (Central) - ca-central-1</option>
+                </optgroup>
+            
+                <optgroup label="South America">
+                    <option value="sa-east-1">South America (São Paulo) - sa-east-1</option>
+                </optgroup>
+            
+                <optgroup label="Europe">
+                    <option value="eu-west-1">Europe (Ireland) - eu-west-1</option>
+                    <option value="eu-west-2">Europe (London) - eu-west-2</option>
+                    <option value="eu-west-3">Europe (Paris) - eu-west-3</option>
+                    <option value="eu-central-1">Europe (Frankfurt) - eu-central-1</option>
+                    <option value="eu-north-1">Europe (Stockholm) - eu-north-1</option>
+                    <option value="eu-south-1">Europe (Milan) - eu-south-1</option>
+                </optgroup>
+            
+                <optgroup label="Asia Pacific">
+                    <option value="ap-east-1">Asia Pacific (Hong Kong) - ap-east-1</option>
+                    <option value="ap-south-1">Asia Pacific (Mumbai) - ap-south-1</option>
+                    <option value="ap-northeast-1">Asia Pacific (Tokyo) - ap-northeast-1</option>
+                    <option value="ap-northeast-2">Asia Pacific (Seoul) - ap-northeast-2</option>
+                    <option value="ap-northeast-3">Asia Pacific (Osaka) - ap-northeast-3</option>
+                    <option value="ap-southeast-1">Asia Pacific (Singapore) - ap-southeast-1</option>
+                    <option value="ap-southeast-2">Asia Pacific (Sydney) - ap-southeast-2</option>
+                    <option value="ap-southeast-3">Asia Pacific (Jakarta) - ap-southeast-3</option>
+                </optgroup>
+            
+                <optgroup label="Middle East">
+                    <option value="me-south-1">Middle East (Bahrain) - me-south-1</option>
+                </optgroup>
+            
+                <optgroup label="Africa">
+                    <option value="af-south-1">Africa (Cape Town) - af-south-1</option>
+                </optgroup>
+            </select>
+
+            <!-- Prometheus Version Field -->
+            <div class="info-icon" data-tooltip="Available versions of the kube-prometheus-stack Helm chart">
+                <label for="PROMETHEUS_VERSION">Prometheus Version</label>
+                <span class="icon">i</span>
+            </div>
+            <input type="text" id="PROMETHEUS_VERSION" name="PROMETHEUS_VERSION" placeholder="Enter prometheus version">
+
+            <!-- Label Key Field -->
+            <!-- <div class="info-icon" data-tooltip="AWS EKS Node Group label key for deployment setup.">
+                <label for="LABEL_KEY">Label Key</label>
+                <span class="icon">i</span>
+            </div>
+            <input type="text" id="LABEL_KEY" name="LABEL_KEY" placeholder="Enter label key"> -->
+
+            <!-- Label Value Field -->
+            <!-- <div class="info-icon" data-tooltip="AWS EKS Node Group label value for deployment setup.">
+                <label for="LABEL_VALUE">Label Value</label>
+                <span class="icon">i</span>
+            </div>
+            <input type="text" id="LABEL_VALUE" name="LABEL_VALUE" placeholder="Enter label value"> -->
         </div>
     </form>
 
@@ -146,7 +314,11 @@
         <!-- Node Strategy Selection -->
         <div class="section">
             <h3>📌 Node Placement Strategy</h3>
-            <label for="NODE_STRATEGY">Select a Node Placement strategy:</label>
+            <div class="info-icon"
+                data-tooltip="Select a strategy to define how nodes are assigned for deployment: Node Selector, Node Affinity, Taints and Tolerations, or No Node Placement.">
+                <label for="NODE_STRATEGY">Select a Node Placement strategy:</label>
+                <span class="icon">i</span>
+            </div>
             <select id="NODE_STRATEGY" name="NODE_STRATEGY" onchange="toggleNodeFields()">
                 <option value="4">No Node Placement</option>
                 <option value="1">Node Selector</option>
@@ -206,7 +378,11 @@
         <!-- Grafana Storage Function -->
         <div class="section">
             <h3>🗄️ Grafana Storage</h3>
-            <label for="STORAGE_CHOICE">Select Grafana Storage Choice</label>
+            <div class="info-icon"
+                data-tooltip="Configure storage for Grafana, choosing between persistent volume or dynamic provisioning to retain dashboards and settings.">
+                <label for="STORAGE_CHOICE">Select Grafana Storage Choice</label>
+                <span class="icon">i</span>
+            </div>
             <select id="STORAGE_CHOICE" name="STORAGE_CHOICE" onchange="toggleStorageFields()">
                 <option value="3">No Storage Required</option>
                 <option value="1">Static EBS Volume</option>
@@ -223,7 +399,11 @@
                 <input type="text" id="PVC_NAME_ST" name="PVC_NAME_ST"
                     placeholder="Enter Persistent Volume Claim Name for Static EBS Volume">
 
-                <label for="PV_ID_ST">EBS Volume Id</label>
+                <div class="info-icon"
+                    data-tooltip="The EBS Volume must be pre-created in AWS, and the provided Volume ID should match the existing Volume ID.">
+                    <label for="PV_ID_ST">EBS Volume Id</label>
+                    <span class="icon">i</span>
+                </div>
                 <input type="text" id="PV_ID_ST" name="PV_ID_ST" placeholder="Enter EBS Volume Id">
             </div>
 
@@ -233,7 +413,7 @@
                 <input type="text" id="PVC_NAME_DY" name="PVC_NAME_DY"
                     placeholder="Enter PVC Name for Dynamic EBS Volume">
 
-                <label for="PV_SIZE_DY">PV Size</label>
+                <label for="PV_SIZE_DY">PV Size (in Gi)</label>
                 <input type="number" id="PV_SIZE_DY" name="PV_SIZE_DY" min="1" max="16384" value="1"
                     class="form-control numeric-input"
                     placeholder="Enter Size of EBS Volume in GBs for Dynamic EBS Volume">
@@ -246,7 +426,11 @@
         <!-- Prometheus Storage Function -->
         <div class="section">
             <h3>📊 Prometheus Storage</h3>
-            <label for="PROMETHEUS_STORAGE_CHOICE">Select Prometheus Storage Choice</label>
+            <div class="info-icon"
+                data-tooltip="Set up storage for Prometheus to ensure long-term metric retention, using persistent volumes, dynamic provisioning, or GCS bucket storage for scalability and durability.">
+                <label for="PROMETHEUS_STORAGE_CHOICE">Select Prometheus Storage Choice</label>
+                <span class="icon">i</span>
+            </div>
             <select id="PROMETHEUS_STORAGE_CHOICE" name="PROMETHEUS_STORAGE_CHOICE"
                 onchange="togglePrometheusStorageFields()">
                 <option value="4">No Storage Required</option>
@@ -265,7 +449,11 @@
                 <input type="text" id="PR_PVC_NAME_ST" name="PR_PVC_NAME_ST"
                     placeholder="Enter Persistent Volume Claim Name for Static EBS Volume">
 
-                <label for="PR_PV_ID_ST">EBS Volume Id</label>
+                <div class="info-icon"
+                    data-tooltip="The EBS Volume must be pre-created in AWS, and the provided Volume ID should match the existing Volume ID.">
+                    <label for="PR_PV_ID_ST">EBS Volume Id</label>
+                    <span class="icon">i</span>
+                </div>
                 <input type="text" id="PR_PV_ID_ST" name="PR_PV_ID_ST" placeholder="Enter EBS Volume Id">
             </div>
 
@@ -282,7 +470,10 @@
 
             <!-- S3 Storage -->
             <div id="s3Storage" class="hidden">
-                <label for="S3_BUCKET_NAME">S3 Bucket Name</label>
+                <div class="info-icon" data-tooltip="The S3 bucket must be pre-created in AWS, and the provided name should match the existing bucket.">
+                    <label for="S3_BUCKET_NAME">S3 Bucket Name</label>
+                    <span class="icon">i</span>
+                </div>
                 <input type="text" id="S3_BUCKET_NAME" name="S3_BUCKET_NAME"
                     placeholder="Enter the name of the S3 bucket created">
 
@@ -386,7 +577,7 @@
             }
 
             // Start deployment
-            const response = await fetch('/gke-deploy', {
+            const response = await fetch('/deploy', {
                 method: 'POST',
                 body: formData
             });

@@ -1,14 +1,14 @@
 # variables.sh
-PROJECT_ID=""
+PROJECT_ID="rock-star-450114-d3"
 
-NAMESPACE=""
+NAMESPACE="monitoring"
 
-CLUSTER_NAME=""
-LABEL_KEY=""
-LABEL_VALUE=""
-REGION=""
+CLUSTER_NAME="gke-demo1"
+LABEL_KEY="type"
+LABEL_VALUE="monitoring"
+REGION="us-east1-b"
 
-PROMETHEUS_VERSION=""
+PROMETHEUS_VERSION="68.3.0"
 LOKI_VERSION=""
 PROMTAIL_VERSION=""
 
@@ -20,11 +20,11 @@ PROMTAIL_VERSION=""
 # 3. Taints and Tolerations
 # 4. No Node Placement
 # Enter your choice (1/2/3/4) in NODE_STRATEGY
-NODE_STRATEGY="4"
+NODE_STRATEGY="1"
 
 # if 1. Node Selector
-NODE_SELECTOR_KEY=""
-NODE_SELECTOR_VALUE=""
+NODE_SELECTOR_KEY="type"
+NODE_SELECTOR_VALUE="monitoring"
 
 # if 2. Node Affinity
 NODE_AFFINITY_KEY=""
@@ -46,7 +46,7 @@ NODE_AFFINITY_VALUE_TT=""
 # 2. Dynamic EBS Volume
 # 3. No Storage Required
 # Enter your choice (1/2/3) in STORAGE_CHOICE
-STORAGE_CHOICE="3"
+STORAGE_CHOICE="2"
 
 # if 1. Static EBS Volume  
 # **Please ensure that the volume is created in the same AWS region as the node labeled for monitoring. **
@@ -55,8 +55,8 @@ PVC_NAME_ST=""
 PV_ID_ST=""
 
 # if 2. Dynamic EBS Volume
-PVC_NAME_DY=""
-PV_SIZE_DY="10"
+PVC_NAME_DY="my-gf-storage"
+PV_SIZE_DY="12"
 
 # if 3. No Storage Required
 
@@ -67,7 +67,7 @@ PV_SIZE_DY="10"
 # 2. Dynamic EBS Volume
 # 3. No Storage Required
 # Enter your choice (1/2/3): in PROMETHEUS_STORAGE_CHOICE
-PROMETHEUS_STORAGE_CHOICE="4"
+PROMETHEUS_STORAGE_CHOICE="2"
 
 # if 1. Static EBS Volume  
 # **Please ensure that the volume is created in the same AWS region as the node labeled for monitoring. **
@@ -76,8 +76,8 @@ PR_PVC_NAME_ST=""
 PR_PV_ID_ST=""
 
 # if 2. Dynamic EBS Volume
-PR_PV_SIZE_DY="10"
-PR_PVC_NAME_DY=""
+PR_PV_SIZE_DY="11"
+PR_PVC_NAME_DY="my-prom-store"
 
 # if 3. GCS Bucket Storage
 BUCKET_NAME=""

@@ -4,7 +4,7 @@ NAMESPACE=""
 CLUSTER_NAME=""
 LABEL_KEY=""
 LABEL_VALUE=""
-REGION=""
+REGION="us-west-2"
 
 PROMETHEUS_VERSION=""
 LOKI_VERSION=""
@@ -54,7 +54,7 @@ PV_ID_ST=""
 
 # if 2. Dynamic EBS Volume
 PVC_NAME_DY=""
-PV_SIZE_DY=""
+PV_SIZE_DY="1"
 
 # if 3. No Storage Required
 
@@ -76,7 +76,7 @@ PR_PV_ID_ST=""
 
 # if 2. Dynamic EBS Volume
 PR_PVC_NAME_DY=""
-PR_PV_SIZE_DY=""
+PR_PV_SIZE_DY="1"
 
 # if 3. S3 Bucket Storage
 S3_BUCKET_NAME=""

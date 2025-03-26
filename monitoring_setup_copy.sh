@@ -566,7 +566,7 @@ get_AZ_node() {
 }
 
 storageclass() {
-  get_AZ_node
+  # get_AZ_node
   kubectl apply -n $NAMESPACE -f - <<EOF
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
