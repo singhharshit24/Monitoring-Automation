@@ -90,5 +90,7 @@ AWS_SECRET_KEY=""
 # Option to enable monitoring for ec2.
 # Enter your choice (yes/no)
 ENABLE_EC2_MONITORING="yes"
+EC2_REGION=""
+IPS=""
 
 # *********************************

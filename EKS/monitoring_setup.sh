@@ -1257,42 +1257,43 @@ EOF
 }
 
 monitor_ec2() {
-  SECRET_NAME="additional-scrape-configs"
-  SCRAPE_FILE="prometheus-additional.yaml"
 
   if [[ "$enable_ec2_monitoring" != "yes" ]]; then
     echo "❌ Skipping EC2 monitoring setup."
     exit 0
   fi
 
+  SECRET_NAME="additional-scrape-configs"
+  SCRAPE_FILE="prometheus-additional.yaml"
+  
   echo "Fetching EC2 instances in region: $REGION..."
 
-  # Get instance IDs and IPs
-  instances=$(aws ec2 describe-instances \
-    --region "$REGION" \
-    --query "Reservations[].Instances[?State.Name=='running'].{ID:InstanceId,IP:PrivateIpAddress,Name:Tags[?Key=='Name']|[0].Value}" \
-    --output text)
+  # # Get instance IDs and IPs
+  # instances=$(aws ec2 describe-instances \
+  #   --region "$REGION" \
+  #   --query "Reservations[].Instances[?State.Name=='running'].{ID:InstanceId,IP:PrivateIpAddress,Name:Tags[?Key=='Name']|[0].Value}" \
+  #   --output text)
 
-  if [[ -z "$instances" ]]; then
-    echo "⚠️ No running EC2 instances found in $REGION."
-    exit 1
-  fi
+  # if [[ -z "$instances" ]]; then
+  #   echo "⚠️ No running EC2 instances found in $REGION."
+  #   exit 1
+  # fi
 
-  # Let user pick EC2s to monitor
-  echo "Select EC2 instances to monitor (space-separated numbers):"
-  i=1
-  declare -A ip_map
-  while read -r id ip name; do
-    echo "$i) $name ($id) - $ip"
-    ip_map[$i]=$ip
-    ((i++))
-  done <<< "$instances"
+  # # Let user pick EC2s to monitor
+  # echo "Select EC2 instances to monitor (space-separated numbers):"
+  # i=1
+  # declare -A ip_map
+  # while read -r id ip name; do
+  #   echo "$i) $name ($id) - $ip"
+  #   ip_map[$i]=$ip
+  #   ((i++))
+  # done <<< "$instances"
 
-  read -r selected
+  # read -r selected
 
   # Build target IP list
   targets=()
-  for idx in $selected; do
+  for idx in $IPS; do
     targets+=("${ip_map[$idx]}")
   done
 

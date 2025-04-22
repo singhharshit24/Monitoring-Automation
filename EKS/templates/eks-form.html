@@ -487,7 +487,7 @@
         </div>
     </form>
 
-    <form id="configForm" class="card-container">
+    <form id="configForm4" class="card-container">
         <div class="section">
 
             <h3>🔹 Monitor EC2 Instances</h3>
@@ -505,11 +505,59 @@
             </div>
 
             <!-- EC2 Instance Selection (hidden initially) -->
-            <div id="ec2InstanceSection" class= "hidden">
+            <div id="ec2InstanceSection" class="hidden">
+                <div class="info-icon" data-tooltip="Select the AWS Region where the cluster is located.">
+                    <label for="EC2_REGION">Region</label>
+                    <span class="icon">i</span>
+                </div>
+                <select class="form-control" id="EC2_REGION" name="EC2_REGION" required>
+                    <option value="">Select a region</option>
+
+                    <optgroup label="North America">
+                        <option value="us-east-1">US East (N. Virginia) - us-east-1</option>
+                        <option value="us-east-2">US East (Ohio) - us-east-2</option>
+                        <option value="us-west-1">US West (N. California) - us-west-1</option>
+                        <option value="us-west-2">US West (Oregon) - us-west-2</option>
+                        <option value="ca-central-1">Canada (Central) - ca-central-1</option>
+                    </optgroup>
+
+                    <optgroup label="South America">
+                        <option value="sa-east-1">South America (São Paulo) - sa-east-1</option>
+                    </optgroup>
+
+                    <optgroup label="Europe">
+                        <option value="eu-west-1">Europe (Ireland) - eu-west-1</option>
+                        <option value="eu-west-2">Europe (London) - eu-west-2</option>
+                        <option value="eu-west-3">Europe (Paris) - eu-west-3</option>
+                        <option value="eu-central-1">Europe (Frankfurt) - eu-central-1</option>
+                        <option value="eu-north-1">Europe (Stockholm) - eu-north-1</option>
+                        <option value="eu-south-1">Europe (Milan) - eu-south-1</option>
+                    </optgroup>
+
+                    <optgroup label="Asia Pacific">
+                        <option value="ap-east-1">Asia Pacific (Hong Kong) - ap-east-1</option>
+                        <option value="ap-south-1">Asia Pacific (Mumbai) - ap-south-1</option>
+                        <option value="ap-northeast-1">Asia Pacific (Tokyo) - ap-northeast-1</option>
+                        <option value="ap-northeast-2">Asia Pacific (Seoul) - ap-northeast-2</option>
+                        <option value="ap-northeast-3">Asia Pacific (Osaka) - ap-northeast-3</option>
+                        <option value="ap-southeast-1">Asia Pacific (Singapore) - ap-southeast-1</option>
+                        <option value="ap-southeast-2">Asia Pacific (Sydney) - ap-southeast-2</option>
+                        <option value="ap-southeast-3">Asia Pacific (Jakarta) - ap-southeast-3</option>
+                    </optgroup>
+
+                    <optgroup label="Middle East">
+                        <option value="me-south-1">Middle East (Bahrain) - me-south-1</option>
+                    </optgroup>
+
+                    <optgroup label="Africa">
+                        <option value="af-south-1">Africa (Cape Town) - af-south-1</option>
+                    </optgroup>
+                </select>
+
                 <p>Select EC2 Instances to monitor:</p>
 
-                {% if ec2_list %}
-                {% for ec2 in ec2_list %}
+                {% if instances %}
+                {% for ec2 in instances %}
                 <label>
                     <input type="checkbox" class="ec2-instance" name="EC2_SELECTION" value="{{ ec2['ip'] }}"
                         onchange="togglePemUpload()">
@@ -590,7 +638,7 @@
             deployButton.disabled = true;
 
             // Collect form data
-            let formIds = ["configForm", "configForm1", "configForm2", "configForm3"];
+            let formIds = ["configForm", "configForm1", "configForm2", "configForm3", "configForm4"];
             let formData = new FormData();
 
             formIds.forEach(id => {
