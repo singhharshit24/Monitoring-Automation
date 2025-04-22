@@ -487,6 +487,44 @@
         </div>
     </form>
 
+    <form id="configForm" class="card-container">
+        <div class="section">
+
+            <h3>🔹 Monitor EC2 Instances</h3>
+
+            <!-- Enable EC2 Monitoring -->
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="ENABLE_EC2_MONITORING" name="ENABLE_EC2_MONITORING" value="yes"
+                        onchange="toggleEC2Section()"> Enable EC2 Monitoring
+                </label>
+            </div>
+
+            <!-- EC2 Instance Selection (hidden initially) -->
+            <div id="ec2InstanceSection" style="display:none; margin-top: 1rem;">
+                <p>Select EC2 Instances to monitor:</p>
+
+                {% if ec2_list %}
+                {% for ec2 in ec2_list %}
+                <label>
+                    <input type="checkbox" class="ec2-instance" name="EC2_SELECTION" value="{{ ec2['ip'] }}"
+                        onchange="togglePemUpload()">
+                    {{ ec2['name'] }} ({{ ec2['id'] }}) - {{ ec2['ip'] }}
+                </label><br>
+                {% endfor %}
+                {% else %}
+                <p><em>No running EC2 instances found.</em></p>
+                {% endif %}
+
+                <!-- PEM File Upload -->
+                <div id="pemUploadSection" style="display:none; margin-top: 1rem;">
+                    <label for="pem_file">Upload .pem file for SSH access:</label><br>
+                    <input type="file" name="pem_file" id="pem_file" accept=".pem">
+                </div>
+            </div>
+        </div>
+    </form>
+
     <div class="button-container">
         <button type="button" onclick="deploySetup()">Deploy on EKS</button>
 
@@ -506,6 +544,22 @@
 
 {% block scripts %}
 <script>
+    function toggleEC2Section() {
+        const ec2Section = document.getElementById("ec2InstanceSection");
+        const isChecked = document.getElementById("ENABLE_EC2_MONITORING").checked;
+        ec2Section.style.display = isChecked ? "block" : "none";
+
+        if (!isChecked) {
+            document.getElementById("pemUploadSection").style.display = "none";
+        }
+    }
+
+    function togglePemUpload() {
+        const ec2Checkboxes = document.querySelectorAll(".ec2-instance:checked");
+        const pemSection = document.getElementById("pemUploadSection");
+        pemSection.style.display = ec2Checkboxes.length > 0 ? "block" : "none";
+    }
+
     function togglePrometheusStorageFields() {
         const strategy = document.getElementById("PROMETHEUS_STORAGE_CHOICE").value;
         document.getElementById("staticEBSVolumePR").classList.toggle("hidden", strategy !== "1");
