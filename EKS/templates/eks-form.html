@@ -500,8 +500,8 @@
                     <span class="icon">i</span>
                 </div>
                 <select id="ENABLE_EC2_MONITORING" name="ENABLE_EC2_MONITORING" onchange="toggleEC2Section()">
-                    <option value="1">Yes</option>
-                    <option value="2">No</option>
+                    <option value="1">No</option>
+                    <option value="2">Yes</option>
                 </select>
             </div>
 
@@ -550,7 +550,7 @@
 {% block scripts %}
 <script>
     function toggleEC2Section() {
-        const strategy = document.getElementById("PROMETHEUS_STORAGE_CHOICE").value;
+        const strategy = document.getElementById("ENABLE_EC2_MONITORING").value;
         document.getElementById("ec2InstanceSection").classList.toggle("hidden", strategy !== "1");
     }
 
