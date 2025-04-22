@@ -498,7 +498,7 @@
                     <label for="ENABLE_EC2_MONITORING">Select Grafana Storage Choice</label>
                     <span class="icon">i</span>
                 </div>
-                <select id="ENABLE_EC2_MONITORING" name="ENABLE_EC2_MONITORING" onchange="toggleEC2Section()">
+                <select id="ENABLE_EC2_MONITORING" name="ENABLE_EC2_MONITORING">
                     <option value="2">No</option>
                     <option value="1">Yes</option>
                 </select>
@@ -510,7 +510,7 @@
                     <label for="EC2_REGION">Select a Region</label>
                     <span class="icon">i</span>
                 </div>
-                <select class="form-control" id="EC2_REGION" name="EC2_REGION" required>
+                <select class="form-control" id="EC2_REGION" name="EC2_REGION" onchange="toggleEC2Section()" required>
                     <option value="">Select a region</option>
 
                     <optgroup label="North America">
