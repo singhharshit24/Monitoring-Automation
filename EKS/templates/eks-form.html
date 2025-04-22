@@ -494,8 +494,7 @@
 
             <!-- Enable EC2 Monitoring -->
             <div class="form-group">
-                <div class="info-icon"
-                    data-tooltip="To monitor EC2 Instances">
+                <div class="info-icon" data-tooltip="To monitor EC2 Instances">
                     <label for="ENABLE_EC2_MONITORING">Select Grafana Storage Choice</label>
                     <span class="icon">i</span>
                 </div>
@@ -506,7 +505,7 @@
             </div>
 
             <!-- EC2 Instance Selection (hidden initially) -->
-            <div id="ec2InstanceSection" style="display:none; margin-top: 1rem;">
+            <div id="ec2InstanceSection" class= "hidden">
                 <p>Select EC2 Instances to monitor:</p>
 
                 {% if ec2_list %}
