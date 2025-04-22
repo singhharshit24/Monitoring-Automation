@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.22.10/babel.min.js"></script>
+
+    <title>Install Prometheus</title>
+    <style>
+        @keyframes loading {
+            0% {
+                width: 0%;
+            }
+
+            50% {
+                width: 100%;
+            }
+
+            100% {
+                width: 0%;
+            }
+        }
+
+        #loading-container {
+            display: none;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+            background: #f0f2f5;
+            margin: 0;
+            padding: 0;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        nav {
+            background: linear-gradient(135deg, #1a237e, #0d47a1);
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        nav h1 {
+            color: #fff;
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            height: 40px;
+            width: auto;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-button {
+            background: transparent;
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 0.8rem 1.2rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .nav-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .welcome-section {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .welcome-section h1 {
+            color: #1a237e;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .install-card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .feature-item {
+            background: linear-gradient(135deg, #f5f7ff, #fff);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            text-align: left;
+        }
+
+        .feature-item h3 {
+            color: #1a237e;
+            margin-top: 0;
+            font-size: 1.1rem;
+        }
+
+        .install-button {
+            background: linear-gradient(135deg, #1a237e, #0d47a1);
+            color: #fff;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 200px;
+        }
+
+        .install-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-text {
+            color: #666;
+            font-size: 1rem;
+            margin: 1rem 0;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <h1>
+            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0id2hpdGUiPjxwYXRoIGQ9Ik0yMCA0QzExLjggNCA1IDEwLjggNSAxOXM2LjggMTUgMTUgMTUgMTUtNi44IDE1LTE1UzI4LjIgNCAyMCA0em0wIDI3Yy02LjYgMC0xMi01LjQtMTItMTJzNS40LTEyIDEyLTEyIDEyIDUuNCAxMiAxMi01LjQgMTItMTIgMTJ6Ii8+PHBhdGggZD0iTTIwIDEwYy01IDAtOSA0LTkgOXM0IDkgOSA5IDktNCA5LTktNC05LTktOXptMCAxNmMtMy45IDAtNy0zLjEtNy03czMuMS03IDctNyA3IDMuMSA3IDctMy4xIDctNyA3eiIvPjwvc3ZnPg=="
+                alt="Prometheus Logo" class="logo">
+            Prometheus Installer
+        </h1>
+        <div class="nav-links">
+            <a href="/" class="nav-button">Home</a>
+            <a href="/add_targets" class="nav-button">Add Targets</a>
+            <a href="/install_grafana" class="nav-button">Install Grafana</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="welcome-section">
+            <h1>Install Prometheus</h1>
+            <p class="info-text">Get started with Prometheus, a powerful monitoring and alerting toolkit.</p>
+        </div>
+
+        <div class="install-card">
+            <div class="feature-list">
+                <div class="feature-item">
+                    <h3>Metrics Collection</h3>
+                    <p class="info-text">Collect metrics from various targets with a flexible query language.</p>
+                </div>
+                <div class="feature-item">
+                    <h3>Time Series Database</h3>
+                    <p class="info-text">Store your metrics efficiently with Prometheus's built-in time series database.
+                    </p>
+                </div>
+                <div class="feature-item">
+                    <h3>Alert Management</h3>
+                    <p class="info-text">Define alerting rules and integrate with Alertmanager for notifications.</p>
+                </div>
+                <div class="feature-item">
+                    <h3>Service Discovery</h3>
+                    <p class="info-text">Automatically discover and monitor new services in your infrastructure.</p>
+                </div>
+            </div>
+
+            <form id="install-form" method="POST" action="/install_prometheus">
+                <input type="hidden" name="install" value="true">
+                <button type="submit" class="install-button" name="install">Install Prometheus</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="loading-container"></div>
+
+    <script type="text/babel">
+        // Define the LoadingSpinner component
+        const LoadingSpinner = () => {
+            const [dots, setDots] = React.useState('');
+
+            React.useEffect(() => {
+                const interval = setInterval(() => {
+                    setDots(prev => prev.length >= 3 ? '' : prev + '.');
+                }, 500);
+
+                return () => clearInterval(interval);
+            }, []);
+
+            return (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-8 shadow-xl max-w-md w-full mx-4">
+                        <div className="flex flex-col items-center">
+                            <div className="relative">
+                                <div className="w-16 h-16 border-4 border-blue-200 rounded-full"></div>
+                                <div className="absolute top-0 w-16 h-16 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
+                            </div>
+
+                            <h2 className="mt-6 text-xl font-semibold text-gray-900">Installing Prometheus{dots}</h2>
+                            <p className="mt-2 text-gray-600 text-center">
+                                This may take a few minutes. Please don't close this window.
+                            </p>
+
+                            <div className="mt-6 w-full bg-gray-200 rounded-full h-2">
+                                <div className="bg-blue-600 h-2 rounded-full animate-[loading_2s_ease-in-out_infinite]"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Initialize the loading spinner
+        const domContainer = document.getElementById('loading-container');
+        const root = ReactDOM.createRoot(domContainer);
+
+        // Add form submit handler
+        document.getElementById('install-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            // Show loading spinner
+            root.render(<LoadingSpinner />);
+            domContainer.style.display = 'block';
+
+            // Submit the form
+            this.submit();
+        });
+    </script>
+</body>
+
+</html>

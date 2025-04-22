@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block additional_css %}
+<style>
+    .para {
+        width: 100%;  /* Changed to 100% as card will handle width */
+        line-height: 1.6;
+        text-align: justify;
+        color: #333;
+        margin: 15px 0;
+    }
+
+    .content-wrapper {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+    }
+
+    .card-container {
+        width: 70%;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        padding: 30px;
+        margin: 20px 0;
+        background: linear-gradient(to bottom right, #ffffff, #f8f9fa);
+        border-top: 5px solid #007bff;
+        transition: transform 0.2s ease-in-out;
+    }
+
+    .card-container:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    h1 {
+        text-align: center;
+        color: #2c3e50;
+        margin-bottom: 30px;
+        font-size: 2.5em;
+        font-weight: 600;
+    }
+
+    .card-title {
+        color: #007bff;
+        font-size: 1.5em;
+        margin-bottom: 20px;
+        text-align: center;
+        font-weight: 500;
+    }
+
+    /* Adding some accent elements */
+    .accent-line {
+        width: 50px;
+        height: 3px;
+        background: #007bff;
+        margin: 10px auto 30px;
+    }
+
+    body {
+        background: linear-gradient(to right, #f4f4f4, #e3eaf8);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Your home page content here -->
+<div class="content-wrapper">
+    <h1>Monitoring Accelerator</h1>
+    <div class="accent-line"></div>
+    
+    <div class="card-container">
+        <h2 class="card-title">Simplified Kubernetes Monitoring</h2>
+        <p class="para">
+            The Monitoring Accelerator is a streamlined, one-click deployment solution designed to simplify the complex task of
+            setting up comprehensive observability for your Kubernetes clusters on Amazon EKS and Google GKE. By automating the
+            deployment of industry-standard monitoring tools - Prometheus for metrics collection and Grafana for visualization -
+            this accelerator eliminates the time-consuming manual configuration process that organizations typically face when
+            establishing their monitoring infrastructure. The solution comes pre-configured with best practices, ensuring you
+            get enterprise-grade monitoring capabilities without the need for extensive setup and configuration expertise.
+        </p>
+        <p class="para">
+            What sets this accelerator apart is its ability to seamlessly integrate with both Amazon EKS and Google GKE
+            environments, providing a consistent monitoring experience across cloud platforms. Through an intuitive web
+            interface, users can customize their deployment parameters and launch a production-ready monitoring stack in minutes
+            rather than days. The solution includes pre-built dashboards that offer immediate visibility into crucial metrics
+            such as cluster health, resource utilization, and application performance, enabling teams to quickly identify and
+            respond to potential issues before they impact their services. This accelerator is ideal for teams looking to
+            rapidly establish robust monitoring capabilities while maintaining the flexibility to customize their observability
+            stack as their needs evolve.
+        </p>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>General Resources - AWS Monitoring Portal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-chart-line"></i>
+                <h2>AWS Monitoring</h2>
+            </div>
+            <ul class="sidebar-menu">
+                <li><i class="fas fa-home"></i><a href="{{ url_for('index') }}">Home</a></li>
+                <li class="active"><i class="fas fa-server"></i><a href="{{ url_for('select_resource_type') }}">Resources</a></li>
+                <li><i class="fas fa-cogs"></i><a href="#">Settings</a></li>
+                <li><i class="fas fa-question-circle"></i><a href="#">Help</a></li>
+            </ul>
+        </nav>
+
+        <main class="content">
+            <header class="content-header">
+                <h1>General AWS Resources</h1>
+                <p>Choose your preferred monitoring solution</p>
+            </header>
+
+            <div class="monitoring-options">
+                <h2>Open Source Solutions</h2>
+                <div class="options-grid">
+                    <div class="option-card" id="grafana-card">
+                        <img src="{{ url_for('static', filename='img/grafana-logo.jpg') }}" alt="Grafana Logo">
+                        <h3>Grafana + Prometheus</h3>
+                        <p>Industry-standard open source monitoring with beautiful dashboards</p>
+                        <ul>
+                            <li>Custom dashboards</li>
+                            <li>Advanced visualizations</li>
+                            <li>Powerful query language</li>
+                        </ul>
+                        <button class="btn btn-primary start-service-btn" 
+                                data-service="grafanamonitoring">Set Up Grafana</button>
+                    </div>
+
+                    <div class="option-card" id="ansible-card">
+                        <img src="{{ url_for('static', filename='img/ansible-logo.jpg') }}" alt="Ansible Logo">
+                        <h3>Ansible Automation</h3>
+                        <p>Configuration management and monitoring deployment</p>
+                        <ul>
+                            <li>Automated agent setup</li>
+                            <li>Configuration as code</li>
+                            <li>Multi-cloud support</li>
+                        </ul>
+                        <button class="btn btn-primary start-service-btn" 
+                                data-service="ansiblemonitoring">Set Up Ansible</button>
+                    </div>
+                </div>
+
+                <h2>Paid Solutions</h2>
+                <div class="options-grid">
+                    <div class="option-card" id="cloudwatch-card">
+                        <img src="{{ url_for('static', filename='img/cloudwatch-logo.jpg') }}" alt="CloudWatch Logo">
+                        <h3>Amazon CloudWatch</h3>
+                        <p>Native AWS monitoring solution with deep integration</p>
+                        <ul>
+                            <li>Built-in AWS metrics</li>
+                            <li>Log analysis</li>
+                            <li>Alarm management</li>
+                        </ul>
+                        <button class="btn btn-primary start-service-btn"
+                                data-service="cloudwatch_monitoring">Set Up CloudWatch</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="notification" class="notification hidden">
+        <span id="notification-message"></span>
+        <button id="notification-close"><i class="fas fa-times"></i></button>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

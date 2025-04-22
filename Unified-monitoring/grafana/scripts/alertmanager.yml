@@ -1,0 +1,21 @@
+global:
+  resolve_timeout: 1m
+  slack_api_url: https://hooks.slack.com/services/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
+receivers:
+- name: slack-notifications
+  slack_configs:
+  - channel: ''
+    icon_url: https://avatars3.githubusercontent.com/u/3380462
+    send_resolved: true
+    text: "{{ range .Alerts -}} *Alert:* {{ .Annotations.title }}{{ if .Labels.severity\
+      \ }} - `{{ .Labels.severity }}`{{ end }}\n*Description:* {{ .Annotations.description\
+      \ }}\n*Details:*\n  {{ range .Labels.SortedPairs }} \u2022 *{{ .Name }}:* `{{\
+      \ .Value }}`\n  {{ end }}\n{{ end }}"
+    title: "[{{ .Status | toUpper }}{{ if eq .Status \"firing\" }}:{{ .Alerts.Firing\
+      \ | len }}{{ end }}] {{ .CommonLabels.alertname }} for {{ .CommonLabels.job\
+      \ }}\n{{- if gt (len .CommonLabels) (len .GroupLabels) -}}\n  {{\" \"}}(\n \
+      \ {{- with .CommonLabels.Remove .GroupLabels.Names }}\n    {{- range $index,\
+      \ $label := .SortedPairs -}}\n      {{ if $index }}, {{ end }}\n      {{- $label.Name\
+      \ }}=\"{{ $label.Value -}}\"\n    {{- end }}\n  {{- end -}}\n  )\n{{- end }}"
+route:
+  receiver: slack-notifications

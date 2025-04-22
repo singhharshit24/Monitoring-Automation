@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AWS Resource Monitoring Setup</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="setup-wizard">
+      <h1>AWS Resource Monitoring Setup</h1>
+      
+      <!-- Step 1: Service Selection -->
+      <div class="step" id="step1">
+        <h2>Step 1: Select AWS Service</h2>
+        <div id="serviceGrid" class="service-grid">
+          <!-- Service cards will be populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Step 2: Resource Selection -->
+      <div class="step" id="step2" style="display: none;">
+        <h2>Step 2: Select Resources (from all regions)</h2>
+        <div class="form-group">
+          <label for="regionFilter">Filter by Region</label>
+          <select id="regionFilter">
+            <option value="">All Regions</option>
+          </select>
+        </div>
+        <div class="resource-list" id="resourceList">
+          <!-- Resources will be populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Step 3: Metrics Selection -->
+      <div class="step" id="step3" style="display: none;">
+        <h2>Step 3: Select Metrics to Monitor</h2>
+        <div class="metrics-grid" id="metricsGrid">
+          <!-- Metrics will be populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Step 4: Alert Configuration -->
+      <div class="step" id="step4" style="display: none;">
+        <h2>Step 4: Configure Alerts</h2>
+        <div class="alert-config">
+          <div class="enable-alerts">
+            <input type="checkbox" id="enableAlerts" name="enableAlerts">
+            <label for="enableAlerts">Enable CloudWatch Alerts</label>
+          </div>
+          <div id="thresholds" style="display: none;">
+            <!-- Thresholds will be populated dynamically -->
+          </div>
+        </div>
+        
+        <!-- Progress Bar (initially hidden) -->
+        <div id="progressContainer" style="display:none; margin-bottom:1rem; border:1px solid var(--border-color); border-radius:4px; background:#e9ecef;">
+          <div id="progressBar" style="width:0%; height:20px; background-color:var(--primary-color); border-radius:4px;"></div>
+        </div>
+      </div>
+
+
+      <!-- Navigation Buttons -->
+      <div class="navigation-buttons">
+        <button id="prevBtn" style="display: none;">Previous</button>
+        <button id="nextBtn">Next</button>
+        <button id="submitBtn" style="display: none;">Deploy Monitoring</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result Modal -->
+  <div id="resultModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <script src="js/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,363 @@
+---
+- name: Install Prometheus and Node Exporter on Master Server
+  hosts: master
+  become: true
+  vars_files:
+    - vars.yml
+  tasks:
+    # Step 1: Install Prometheus
+    - name: Download Prometheus
+      get_url:
+        url: "https://github.com/prometheus/prometheus/releases/download/v3.1.0/prometheus-3.1.0.linux-amd64.tar.gz"
+        dest: "/tmp/prometheus-3.1.0.linux-amd64.tar.gz"
+      when: install_prometheus
+    
+    - name: Extract Prometheus archive
+      unarchive:
+        src: "/tmp/prometheus-3.1.0.linux-amd64.tar.gz"
+        dest: "/tmp/"
+        remote_src: true
+      when: install_prometheus
+    
+    - name: Move Prometheus and promtool to /usr/local/bin
+      command:
+        cmd: mv /tmp/prometheus-3.1.0.linux-amd64/prometheus /tmp/prometheus-3.1.0.linux-amd64/promtool /usr/local/bin/
+      when: install_prometheus
+
+    # Step 2: Create /etc/prometheus directory
+    - name: Create /etc/prometheus directory
+      file:
+        path: /etc/prometheus
+        state: directory
+        mode: '0755'
+      when: install_prometheus
+
+    # Step 3: Move prometheus.yml to /etc/prometheus
+    - name: Move prometheus.yml to /etc/prometheus
+      command:
+        cmd: mv /tmp/prometheus-3.1.0.linux-amd64/prometheus.yml /etc/prometheus/prometheus.yml
+      when: install_prometheus
+
+    - name: Create necessary directories for Prometheus
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      with_items:
+        - /etc/prometheus
+        - /var/lib/prometheus
+      when: install_prometheus
+    
+    - name: Create Prometheus user
+      user:
+        name: prometheus
+        system: yes
+        shell: /bin/false
+      when: install_prometheus
+    
+    - name: Set permissions for Prometheus directories
+      file:
+        path: "{{ item }}"
+        owner: prometheus
+        group: prometheus
+        recurse: yes
+      with_items:
+        - /etc/prometheus
+        - /var/lib/prometheus
+      when: install_prometheus
+    
+    - name: Create Prometheus systemd service file
+      copy:
+        dest: "/etc/systemd/system/prometheus.service"
+        content: |
+          [Unit]
+          Description=Prometheus
+          Wants=network-online.target
+          After=network-online.target
+
+          [Service]
+          User=prometheus
+          Group=prometheus
+          Type=simple
+          Restart=on-failure
+          RestartSec=5s
+          ExecStart=/usr/local/bin/prometheus \
+              --config.file /etc/prometheus/prometheus.yml \
+              --storage.tsdb.path /var/lib/prometheus/ \
+              --web.console.templates=/etc/prometheus/consoles \
+              --web.console.libraries=/etc/prometheus/console_libraries \
+              --web.listen-address=0.0.0.0:9090 \
+              --web.enable-lifecycle \
+              --log.level=info
+
+          [Install]
+          WantedBy=multi-user.target
+      when: install_prometheus
+    
+    - name: Reload systemd and enable Prometheus service
+      systemd:
+        name: prometheus
+        enabled: yes
+        state: started
+      when: install_prometheus
+
+    # Step 2: Install Node Exporter
+    - name: Download Node Exporter
+      get_url:
+        url: "https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz"
+        dest: "/tmp/node_exporter-1.8.2.linux-amd64.tar.gz"
+      when: install_node_exporter
+    
+    - name: Extract Node Exporter archive
+      unarchive:
+        src: "/tmp/node_exporter-1.8.2.linux-amd64.tar.gz"
+        dest: "/tmp/"
+        remote_src: true
+      when: install_node_exporter
+    
+    - name: Move Node Exporter binary
+      command: mv /tmp/node_exporter-1.8.2.linux-amd64/node_exporter /usr/local/bin/
+      when: install_node_exporter
+    
+    - name: Create Node Exporter user
+      user:
+        name: node_exporter
+        system: yes
+        shell: /bin/false
+      when: install_node_exporter
+    
+    - name: Create Node Exporter systemd service file
+      copy:
+        dest: "/etc/systemd/system/node_exporter.service"
+        content: |
+          [Unit]
+          Description=Node Exporter
+          Wants=network-online.target
+          After=network-online.target
+
+          [Service]
+          User=node_exporter
+          Group=node_exporter
+          Type=simple
+          Restart=on-failure
+          RestartSec=5s
+          ExecStart=/usr/local/bin/node_exporter
+
+          [Install]
+          WantedBy=multi-user.target
+      when: install_node_exporter
+    
+    - name: Reload systemd and enable Node Exporter service
+      systemd:
+        name: node_exporter
+        enabled: yes
+        state: started
+      when: install_node_exporter
+    
+    # Step 3: Install Process Exporter
+    - name: Download Process Exporter
+      get_url:
+        url: "https://github.com/ncabatoff/process-exporter/releases/download/v0.7.10/process-exporter-0.7.10.linux-amd64.tar.gz"
+        dest: "/tmp/process-exporter-0.7.10.linux-amd64.tar.gz"
+      when: install_process_exporter
+
+    - name: Extract Process Exporter archive
+      unarchive:
+        src: "/tmp/process-exporter-0.7.10.linux-amd64.tar.gz"
+        dest: "/tmp/"
+        remote_src: true
+      when: install_process_exporter
+
+    - name: Move Process Exporter binary
+      command: mv /tmp/process-exporter-0.7.10.linux-amd64/process-exporter /usr/local/bin/
+      when: install_process_exporter
+
+    - name: Create Process Exporter user
+      user:
+        name: process_exporter
+        system: yes
+        shell: /bin/false
+      when: install_process_exporter
+
+    - name: Create Process Exporter configuration file
+      copy:
+        dest: "/etc/process-exporter.yml"
+        content: |
+          process_names:
+            - name: "{{ '{{.Comm}}' }}"
+              cmdline:
+                - ".+"
+      when: install_process_exporter
+
+    - name: Create Process Exporter systemd service file
+      copy:
+        dest: "/etc/systemd/system/process-exporter.service"
+        content: |
+          [Unit]
+          Description=Process Exporter
+          Wants=network-online.target
+          After=network-online.target
+
+          [Service]
+          User=process_exporter
+          Type=simple
+          ExecStart=/usr/local/bin/process-exporter --config.path /etc/process-exporter.yml
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+      when: install_process_exporter
+
+    - name: Reload systemd and enable Process Exporter service
+      systemd:
+        name: process-exporter
+        enabled: yes
+        state: started
+      when: install_process_exporter
+
+    # Step 4: Install Blackbox Exporter
+    - name: Download Blackbox Exporter
+      get_url:
+        url: "https://github.com/prometheus/blackbox_exporter/releases/download/v0.25.0/blackbox_exporter-0.25.0.linux-amd64.tar.gz"
+        dest: "/tmp/blackbox_exporter-0.25.0.linux-amd64.tar.gz"
+      when: install_blackbox_exporter
+
+    - name: Extract Blackbox Exporter archive
+      unarchive:
+        src: "/tmp/blackbox_exporter-0.25.0.linux-amd64.tar.gz"
+        dest: "/tmp/"
+        remote_src: true
+      when: install_blackbox_exporter
+
+    - name: Move Blackbox Exporter binary
+      command: mv /tmp/blackbox_exporter-0.25.0.linux-amd64/blackbox_exporter /usr/local/bin/
+      when: install_blackbox_exporter
+
+    - name: Create Blackbox Exporter user
+      user:
+        name: blackbox
+        system: yes
+        shell: /bin/false
+      when: install_blackbox_exporter
+
+    - name: Create Blackbox Exporter configuration directory
+      file:
+        path: /etc/blackbox_exporter
+        state: directory
+        mode: '0755'
+      when: install_blackbox_exporter
+
+    - name: Move Blackbox Exporter configuration file
+      command: mv /tmp/blackbox_exporter-0.25.0.linux-amd64/blackbox.yml /etc/blackbox_exporter/
+      when: install_blackbox_exporter
+
+    - name: Set permissions for Blackbox Exporter binary
+      file:
+        path: /usr/local/bin/blackbox_exporter
+        owner: blackbox
+        group: blackbox
+        mode: '0755'
+      when: install_blackbox_exporter
+
+    - name: Set permissions for Blackbox Exporter configuration directory
+      file:
+        path: /etc/blackbox_exporter
+        owner: blackbox
+        group: blackbox
+        recurse: yes
+        mode: '0755'
+      when: install_blackbox_exporter
+
+    - name: Create Blackbox Exporter systemd service file
+      copy:
+        dest: "/etc/systemd/system/blackbox_exporter.service"
+        content: |
+          [Unit]
+          Description=Blackbox Exporter
+          Wants=network-online.target
+          After=network-online.target
+
+          [Service]
+          User=blackbox
+          Group=blackbox
+          Type=simple
+          ExecStart=/usr/local/bin/blackbox_exporter --config.file=/etc/blackbox_exporter/blackbox.yml
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+      when: install_blackbox_exporter
+
+    - name: Reload systemd and enable Blackbox Exporter service
+      systemd:
+        name: blackbox_exporter
+        enabled: yes
+        state: started
+      when: install_blackbox_exporter
+    
+    # Step 5: Install CloudWatch Exporter
+    - name: Install Java for CloudWatch Exporter
+      apt:
+        name: default-jre
+        state: present
+        update_cache: yes
+      when: install_cloudwatch_exporter
+
+    - name: Create CloudWatch Exporter installation directory
+      file:
+        path: /home/ubuntu/cloudwatch_exporter
+        state: directory
+        mode: '0755'
+        owner: ubuntu
+        group: ubuntu
+      when: install_cloudwatch_exporter
+
+    - name: Download CloudWatch Exporter JAR
+      get_url:
+        url: "https://github.com/prometheus/cloudwatch_exporter/releases/download/v0.16.0/cloudwatch_exporter-0.16.0-jar-with-dependencies.jar"
+        dest: "/home/ubuntu/cloudwatch_exporter/cloudwatch_exporter-0.16.0-jar-with-dependencies.jar"
+        mode: '0644'
+      when: install_cloudwatch_exporter
+
+    - name: Create CloudWatch Exporter configuration file
+      copy:
+        dest: "/home/ubuntu/cloudwatch_exporter/config.yml"
+        content: |
+          ---
+          region: us-east-1
+          metrics:
+            - aws_namespace: AWS/EC2
+              aws_metric_name: CPUUtilization
+              aws_dimensions: [InstanceId]
+              aws_statistics: [Average]
+        mode: '0644'
+        owner: ubuntu
+        group: ubuntu
+      when: install_cloudwatch_exporter
+
+    - name: Create CloudWatch Exporter systemd service file
+      copy:
+        dest: "/etc/systemd/system/cloudwatch_exporter.service"
+        content: |
+          [Unit]
+          Description=CloudWatch Exporter
+          After=network.target
+
+          [Service]
+          User=ubuntu
+          ExecStart=/usr/bin/java -jar /home/ubuntu/cloudwatch_exporter/cloudwatch_exporter-0.16.0-jar-with-dependencies.jar 9106 /home/ubuntu/cloudwatch_exporter/config.yml
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+      when: install_cloudwatch_exporter
+
+    - name: Reload systemd and enable CloudWatch Exporter service
+      systemd:
+        name: cloudwatch_exporter
+        enabled: yes
+        state: started
+        daemon_reload: yes
+      when: install_cloudwatch_exporter
+
+

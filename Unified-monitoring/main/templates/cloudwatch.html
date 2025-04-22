@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CloudWatch Monitoring - AWS Monitoring Portal</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="app-container">
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <i class="fas fa-chart-line"></i>
+        <h2>AWS Monitoring</h2>
+      </div>
+      <ul class="sidebar-menu">
+        <li><i class="fas fa-home"></i><a href="{{ url_for('index') }}">Home</a></li>
+        <li><i class="fas fa-server"></i><a href="{{ url_for('select_resource_type') }}">Resources</a></li>
+        <li class="active"><i class="fas fa-cloud"></i><a href="{{ url_for('cloudwatch_page') }}">CloudWatch</a></li>
+        <li><i class="fas fa-cogs"></i><a href="#">Settings</a></li>
+        <li><i class="fas fa-question-circle"></i><a href="#">Help</a></li>
+      </ul>
+    </nav>
+
+    <main class="content">
+      <header class="content-header">
+        <h1>CloudWatch Monitoring Setup</h1>
+        <div class="status-indicator {{ 'active' if service_status == 'running' else 'inactive' }}">
+          <span class="status-dot"></span>
+          <span class="status-text">{{ service_status|title }}</span>
+        </div>
+      </header>
+
+      <div class="setup-container">
+        <div class="setup-card">
+          <div class="setup-icon">
+            <i class="fas fa-cloud"></i>
+          </div>
+          <h2>CloudWatch Monitoring</h2>
+          <p>Your CloudWatch monitoring service is {{ service_status }}. Click below to access the CloudWatch dashboard.</p>
+          
+          <div class="setup-details">
+            <div class="detail-item">
+              <span class="detail-label">Status:</span>
+              <span class="detail-value {{ 'success' if service_status == 'running' else 'error' }}">
+                {{ service_status|title }}
+              </span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Service:</span>
+              <span class="detail-value">cloudwatch_monitoring</span>
+            </div>
+          </div>
+          
+          {% if service_status == 'running' %}
+          <a id="redirect-btn" href="http://{{ request.host.split(':')[0] }}/cloudwatch/" class="btn btn-primary">
+            Take Me to CloudWatch Monitoring
+          </a>
+          {% else %}
+          <button class="btn btn-secondary retry-btn" data-service="cloudwatch_monitoring">
+            Retry Service Start
+          </button>
+          {% endif %}
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="notification" class="notification hidden">
+    <span id="notification-message"></span>
+    <button id="notification-close"><i class="fas fa-times"></i></button>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

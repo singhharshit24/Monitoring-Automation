@@ -1,0 +1,25 @@
+# Control which components to install
+install_prometheus: false
+install_node_exporter_master: false
+install_process_exporter_master: false
+install_blackbox_exporter: false
+install_cloudwatch_exporter: false
+install_alertmanager: false
+install_grafana: false
+
+install_node_exporter_client: true
+install_process_exporter_client: true
+
+add_prometheus_datasource: true
+add_cloudwatch_datasource: true
+
+cloudwatch_assume_role_arn: arn:aws:iam::088585194665:role/cloudwatch-exporter
+# Prometheus configuration
+#prometheus_download_url: "https://github.com/prometheus/prometheus/releases/download/v3.1.0/prometheus-3.1.0.linux-amd64.tar.gz"
+#prometheus_dest: "/tmp/prometheus-3.1.0.linux-amd64.tar.gz"
+#prometheus_extract_dir: "/tmp/prometheus-3.1.0.linux-amd64"
+
+# Node Exporter configuration
+#node_exporter_download_url: "https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz"
+#node_exporter_dest: "/tmp/node_exporter-1.8.2.linux-amd64.tar.gz"
+#node_exporter_extract_dir: "/tmp/node_exporter-1.8.2.linux-amd64"

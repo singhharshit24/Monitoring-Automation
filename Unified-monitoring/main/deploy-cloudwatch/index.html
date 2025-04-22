@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Monitoring Setup</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #475569;
+            --light: #f8fafc;
+            --dark: #1e293b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --border-radius: 8px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+        
+        body {
+            background-color: #f1f5f9;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+        
+        .tagline {
+            font-size: 1.25rem;
+            color: var(--secondary);
+            max-width: 800px;
+            margin: 0 auto 2rem;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--dark);
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0.75rem;
+        }
+        
+        .options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+        
+        .option-card {
+            background-color: white;
+            border: 2px solid #e2e8f0;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            width: 280px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-align: center;
+            position: relative;
+        }
+        
+        .option-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow);
+            border-color: var(--primary);
+        }
+        
+        .option-card.active {
+            border-color: var(--primary);
+            background-color: #eff6ff;
+        }
+        
+        .option-card img {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 1rem;
+        }
+        
+        .option-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            color: var(--dark);
+        }
+        
+        .option-card p {
+            color: var(--secondary);
+            font-size: 0.875rem;
+        }
+        
+        .button {
+            display: inline-block;
+            background-color: var(--primary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            text-align: center;
+            margin-top: 1rem;
+        }
+        
+        .button:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .button:disabled {
+            background-color: var(--secondary);
+            cursor: not-allowed;
+        }
+        
+        .button-secondary {
+            background-color: white;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+        }
+        
+        .button-secondary:hover {
+            background-color: #eff6ff;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .step {
+            margin-bottom: 2rem;
+        }
+        
+        .back-button {
+            background-color: var(--secondary);
+            margin-right: 1rem;
+        }
+        
+        .back-button:hover {
+            background-color: #334155;
+        }
+        
+        .alert {
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .alert-icon {
+            margin-right: 0.75rem;
+            font-size: 1.25rem;
+        }
+        
+        .alert-success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .alert-warning {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        
+        .alert-info {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .progress-container {
+            margin: 2rem 0;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background-color: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-bar-inner {
+            height: 100%;
+            background-color: var(--primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .loader {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 0.5rem;
+        }
+        
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
+        .features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .feature {
+            flex: 1 1 300px;
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+        }
+        
+        .feature-icon {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+        
+        .feature h3 {
+            margin-bottom: 0.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            .options {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .option-card {
+                width: 100%;
+                max-width: 280px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AWS Monitoring Setup</h1>
+            <p class="tagline">Automatically configure monitoring and alerting for your AWS infrastructure in just a few clicks. Get started in minutes with open-source or proprietary solutions.</p>
+        </header>
+        
+        <!-- Welcome Screen -->
+        <div id="welcome-screen" class="card">
+            <h2 class="card-title">Simplify AWS Monitoring</h2>
+            <p>Setting up monitoring and alerting for your AWS infrastructure shouldn't be a headache. Our automated setup helps you:</p>
+            
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">⏱️</div>
+                    <h3>Save Time</h3>
+                    <p>Complete setup in minutes instead of hours or days with our automated process.</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🔧</div>
+                    <h3>No Configuration Hassle</h3>
+                    <p>Pre-configured dashboards and alerts for common AWS services and metrics.</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🚀</div>
+                    <h3>Get Instant Visibility</h3>
+                    <p>Start monitoring your infrastructure immediately after setup.</p>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 2rem;">
+                <button id="get-started-btn" class="button">Get Started</button>
+            </div>
+        </div>
+        
+        <!-- Step 1: Choose what to monitor -->
+        <div id="step-1" class="step card hidden">
+            <h2 class="card-title">Step 1: What would you like to monitor?</h2>
+            <p>Choose the type of AWS resources you want to set up monitoring for:</p>
+            
+            <div class="options">
+                <div class="option-card" data-option="general-resources">
+                    <img src="/api/placeholder/80/80" alt="General Resources">
+                    <h3>General Resources</h3>
+                    <p>Monitor EC2 instances, Lambda functions, S3 buckets, SQS queues, ELB, and more.</p>
+                </div>
+                
+                <div class="option-card" data-option="eks">
+                    <img src="/api/placeholder/80/80" alt="EKS">
+                    <h3>Amazon EKS</h3>
+                    <p>Monitor Kubernetes clusters running on Amazon Elastic Kubernetes Service.</p>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 2rem;">
+                <button id="step-1-next" class="button" disabled>Next</button>
+            </div>
+        </div>
+        
+        <!-- Step 2: Choose monitoring solution type -->
+        <div id="step-2" class="step card hidden">
+            <h2 class="card-title">Step 2: Choose a monitoring solution</h2>
+            <p>Select between open-source tools or AWS managed services for your monitoring needs:</p>
+            
+            <div class="options">
+                <div class="option-card" data-option="open-source">
+                    <img src="/api/placeholder/80/80" alt="Open Source">
+                    <h3>Open Source</h3>
+                    <p>Use Prometheus and Grafana for flexible, powerful, and cost-effective monitoring.</p>
+                </div>
+                
+                <div class="option-card" data-option="paid">
+                    <img src="/api/placeholder/80/80" alt="AWS CloudWatch">
+                    <h3>AWS CloudWatch</h3>
+                    <p>Use Amazon's native monitoring and observability service for seamless AWS integration.</p>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 2rem;">
+                <button id="step-2-back" class="button back-button">Back</button>
+                <button id="step-2-next" class="button" disabled>Next</button>
+            </div>
+        </div>
+        
+        <!-- Step 3: Choose specific tool (only for open source) -->
+        <div id="step-3-open-source" class="step card hidden">
+            <h2 class="card-title">Step 3: Choose an open-source tool</h2>
+            <p>Select the open-source monitoring tool you'd prefer to use:</p>
+            
+            <div class="options">
+                <div class="option-card" data-option="grafana">
+                    <img src="/api/placeholder/80/80" alt="Grafana">
+                    <h3>Grafana</h3>
+                    <p>Beautiful dashboards with Prometheus for data collection and storage.</p>
+                </div>
+                
+                <div class="option-card" data-option="ansible">
+                    <img src="/api/placeholder/80/80" alt="Ansible">
+                    <h3>Ansible</h3>
+                    <p>Automated deployment and configuration management for your monitoring stack.</p>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 2rem;">
+                <button id="step-3-open-source-back" class="button back-button">Back</button>
+                <button id="step-3-open-source-next" class="button" disabled>Deploy</button>
+            </div>
+        </div>
+        
+        <!-- Installation Progress -->
+        <div id="installation-progress" class="step card hidden">
+            <h2 class="card-title">Setting up your monitoring solution</h2>
+            <p id="progress-message">Installing prerequisites...</p>
+            
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div id="progress-bar-inner" class="progress-bar-inner"></div>
+                </div>
+            </div>
+            
+            <div id="progress-status" class="alert alert-info">
+                <span class="alert-icon">ℹ️</span>
+                <span id="status-message">Initializing setup process...</span>
+            </div>
+            
+            <div id="logs-container" style="margin-top: 1.5rem;">
+                <h3>Installation Logs:</h3>
+                <pre id="installation-logs" style="background-color: #1e293b; color: white; padding: 1rem; border-radius: var(--border-radius); height: 200px; overflow-y: auto; font-family: monospace; margin-top: 0.5rem;"></pre>
+            </div>
+        </div>
+        
+        <!-- Success Screen -->
+        <div id="success-screen" class="step card hidden">
+            <h2 class="card-title">Setup Complete!</h2>
+            <div class="alert alert-success">
+                <span class="alert-icon">✅</span>
+                <span>Your CloudWatch monitoring application is now running.</span>
+            </div>
+            
+            <div style="text-align: center; margin-top: 2rem;">
+                <p>You can now access your CloudWatch monitoring application:</p>
+                <a id="dashboard-link" href="#" class="button" style="margin-top: 1rem;">Take me to CloudWatch Application</a>
+            </div>
+            
+            <div style="margin-top: 2rem;">
+                <h3>Next Steps:</h3>
+                <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                    <li>Configure additional metrics for your specific AWS resources</li>
+                    <li>Set up custom alarms for critical thresholds</li>
+                    <li>Create notification channels for alerts</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        const state = {
+            currentStep: 'welcome',
+            resourceType: null,
+            solutionType: null,
+            specificTool: null,
+            installationComplete: false,
+            serverAddress: window.location.origin,
+            publicIp: window.location.hostname
+        };
+
+        // DOM elements
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const step1 = document.getElementById('step-1');
+        const step2 = document.getElementById('step-2');
+        const step3OpenSource = document.getElementById('step-3-open-source');
+        const installationProgress = document.getElementById('installation-progress');
+        const successScreen = document.getElementById('success-screen');
+        
+        const getStartedBtn = document.getElementById('get-started-btn');
+        const step1Next = document.getElementById('step-1-next');
+        const step2Back = document.getElementById('step-2-back');
+        const step2Next = document.getElementById('step-2-next');
+        const step3OpenSourceBack = document.getElementById('step-3-open-source-back');
+        const step3OpenSourceNext = document.getElementById('step-3-open-source-next');
+        
+        const progressBarInner = document.getElementById('progress-bar-inner');
+        const progressMessage = document.getElementById('progress-message');
+        const statusMessage = document.getElementById('status-message');
+        const installationLogs = document.getElementById('installation-logs');
+        const dashboardLink = document.getElementById('dashboard-link');
+
+        // Helper functions
+        function showScreen(screenId) {
+            // Hide all screens
+            welcomeScreen.classList.add('hidden');
+            step1.classList.add('hidden');
+            step2.classList.add('hidden');
+            step3OpenSource.classList.add('hidden');
+            installationProgress.classList.add('hidden');
+            successScreen.classList.add('hidden');
+            
+            // Show the requested screen
+            document.getElementById(screenId).classList.remove('hidden');
+            state.currentStep = screenId;
+        }
+        
+        function selectOption(element, siblingSelector, nextButton) {
+            // Deselect all siblings
+            document.querySelectorAll(siblingSelector).forEach(sibling => {
+                sibling.classList.remove('active');
+            });
+            
+            // Select this option
+            element.classList.add('active');
+            
+            // Enable next button
+            if (nextButton) {
+                nextButton.disabled = false;
+            }
+        }
+        
+        function updateProgress(percentage, message, status, logMessage) {
+            progressBarInner.style.width = `${percentage}%`;
+            
+            if (message) {
+                progressMessage.textContent = message;
+            }
+            
+            if (status) {
+                statusMessage.textContent = status;
+            }
+            
+            if (logMessage) {
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = document.createElement('div');
+                logEntry.textContent = `[${timestamp}] ${logMessage}`;
+                installationLogs.appendChild(logEntry);
+                installationLogs.scrollTop = installationLogs.scrollHeight;
+            }
+        }
+        
+        // Function to simulate API call to backend
+        async function sendCommandToServer(command, params) {
+            try {
+                // In a real implementation, this would be an actual API call
+                // For this demo, we'll simulate the server response
+                
+                console.log(`Sending command to server: ${command}`, params);
+                
+                // Simulate network delay
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                return { 
+                    success: true, 
+                    message: `Successfully executed ${command}` 
+                };
+            } catch (error) {
+                console.error('Error sending command to server:', error);
+                return { 
+                    success: false, 
+                    message: `Error executing ${command}: ${error.message}` 
+                };
+            }
+        }
+        
+        // Function to create CloudWatch service file
+        async function createServiceFile() {
+            updateProgress(20, "Creating CloudWatch service file...", "Setting up CloudWatch service configuration...", "Creating service file at /etc/systemd/system/cloudwatch_monitoring.service");
+            
+            const serviceFileContent = `[Unit]
+Description=CloudWatch Monitoring Application
+After=network.target
+[Service]
+User=root
+WorkingDirectory=/home/ubuntu/aws-monitoring-tool/backend
+ExecStart=/usr/bin/python3 /home/ubuntu/aws-monitoring-tool/backend/app.py
+Restart=always
+RestartSec=10
+Environment=FLASK_ENV=production
+[Install]
+WantedBy=multi-user.target`;
+            
+            // Send command to create service file
+            const response = await sendCommandToServer('create_file', {
+                path: '/etc/systemd/system/cloudwatch_monitoring.service',
+                content: serviceFileContent
+            });
+            
+            if (response.success) {
+                updateProgress(30, "CloudWatch service file created", "Service file created successfully", "Successfully created CloudWatch service file");
+                return true;
+            } else {
+                updateProgress(20, "Failed to create service file", "Error: Could not create service file", "ERROR: Service file creation failed");
+                return false;
+            }
+        }
+        
+        // Function to install prerequisites
+        async function installPrerequisites() {
+            updateProgress(40, "Installing prerequisites...", "Running prerequisites installation script...", "Executing /home/ubuntu/aws-monitoring-tool/prerequisites/install_prerequisites.sh");
+            
+            // Send command to run the prerequisites script
+            const response = await sendCommandToServer('run_script', {
+                script: '/home/ubuntu/aws-monitoring-tool/prerequisites/install_prerequisites.sh'
+            });
+            
+            if (response.success) {
+                updateProgress(60, "Prerequisites installed successfully", "Prerequisites setup completed", "Prerequisites installation completed successfully");
+                return true;
+            } else {
+                updateProgress(40, "Failed to install prerequisites", "Error: Could not install prerequisites", "ERROR: Prerequisites installation failed");
+                return false;
+            }
+        }
+        
+        // Function to start and enable CloudWatch service
+        async function startCloudWatchService() {
+            updateProgress(70, "Starting CloudWatch service...", "Initiating CloudWatch monitoring service...", "Running systemctl daemon-reload");
+            
+            // Reload systemd daemon
+            let response = await sendCommandToServer('run_command', {
+                command: 'sudo systemctl daemon-reload'
+            });
+            
+            if (!response.success) {
+                updateProgress(70, "Failed to reload daemon", "Error: Could not reload systemd daemon", "ERROR: systemctl daemon-reload failed");
+                return false;
+            }
+            
+            updateProgress(80, "Starting CloudWatch service...", "Starting CloudWatch monitoring service...", "Running systemctl start cloudwatch_monitoring");
+            
+            // Start CloudWatch service
+            response = await sendCommandToServer('run_command', {
+                command: 'sudo systemctl start cloudwatch_monitoring'
+            });
+            
+            if (!response.success) {
+                updateProgress(80, "Failed to start service", "Error: Could not start CloudWatch service", "ERROR: systemctl start cloudwatch_monitoring failed");
+                return false;
+            }
+            
+            updateProgress(90, "Enabling CloudWatch service...", "Enabling CloudWatch service on startup...", "Running systemctl enable cloudwatch_monitoring");
+            
+            // Enable CloudWatch service
+            response = await sendCommandToServer('run_command', {
+                command: 'sudo systemctl enable cloudwatch_monitoring'
+            });
+            
+            if (!response.success) {
+                updateProgress(90, "Failed to enable service", "Error: Could not enable CloudWatch service", "ERROR: systemctl enable cloudwatch_monitoring failed");
+                return false;
+            }
+            
+            updateProgress(100, "CloudWatch service running", "CloudWatch monitoring service is now active", "CloudWatch monitoring service started and enabled successfully");
+            return true;
+        }
+        
+        // Function to deploy open source monitoring tool
+        async function deployOpenSourceTool(tool) {
+            updateProgress(40, `Deploying ${tool}...`, `Setting up ${tool}...`, `Starting ${tool} deployment`);
+            
+            // Send command to deploy the selected open source tool
+            const response = await sendCommandToServer('deploy_tool', {
+                tool: tool
+            });
+            
+            if (response.success) {
+                updateProgress(70, `${tool} deployed successfully`, `${tool} is now running`, `${tool} deployment completed successfully`);
+                return true;
+            } else {
+                updateProgress(40, `Failed to deploy ${tool}`, `Error: Could not deploy ${tool}`, `ERROR: ${tool} deployment failed`);
+                return false;
+            }
+        }
+        
+        // Function to check if CloudWatch service is running
+        async function checkCloudWatchService() {
+            const response = await sendCommandToServer('run_command', {
+                command: 'systemctl is-active cloudwatch_monitoring'
+            });
+            
+            if (response.success && response.message.trim() === 'active') {
+                return true;
+            }
+            return false;
+        }
+        
+        // Main CloudWatch deployment function
+        async function deployCloudWatch() {
+            showScreen('installation-progress');
+            
+            // Step 1: Create service file
+            const serviceFileCreated = await createServiceFile();
+            if (!serviceFileCreated) {
+                return;
+            }
+            
+            // Step 2: Install prerequisites
+            const prerequisitesInstalled = await installPrerequisites();
+            if (!prerequisitesInstalled) {
+                return;
+            }
+            
+            // Step 3: Start and enable the CloudWatch service
+            const serviceStarted = await startCloudWatchService();
+            if (!serviceStarted) {
+                return;
+            }
+            
+            // Step 4: Verify service is running
+            let isRunning = await checkCloudWatchService();
+            let retries = 0;
+            
+            while (!isRunning && retries < 3) {
+                updateProgress(95, "Verifying service status...", "Waiting for CloudWatch service to start...", `Checking if service is running (attempt ${retries + 1}/3)`);
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                isRunning = await checkCloudWatchService();
+                retries++;
+            }
+            
+            if (!isRunning) {
+                updateProgress(95, "Service status check failed", "Warning: Could not verify if service is running", "WARNING: Could not confirm if CloudWatch service is active");
+            }
+            
+            // Set dashboard link
+            dashboardLink.href = `http://${state.publicIp}/cloudwatch`;
+            
+            // Show success screen
+            setTimeout(() => {
+                showScreen('success-screen');
+            }, 1000);
+        }
+        
+        // Main open source deployment function 
+        async function deployOpenSource() {
+            showScreen('installation-progress');
+            
+            // Deploy the selected open source tool
+            const deploymentSuccess = await deployOpenSourceTool(state.specificTool);
+            if (!deploymentSuccess) {
+                return;
+            }
+            
+            // Set dashboard link based on the selected tool
+            if (state.specificTool === 'grafana') {
+                dashboardLink.href = `http://${state.publicIp}/grafana`;
+                dashboardLink.textContent = "Open Grafana Dashboard";
+            } else {
+                dashboardLink.href = `http://${state.publicIp}/ansible`;
+                dashboardLink.textContent = "Open Ansible Dashboard";
+            }
+            
+            // Show success screen
+            setTimeout(() => {
+                showScreen('success-screen');
+            }, 1000);
+        }
+
+        // Event Listeners
+        getStartedBtn.addEventListener('click', () => {
+            showScreen('step-1');
+        });
+
+        // Step 1 options
+        step1.querySelectorAll('.option-card').forEach(option => {
+            option.addEventListener('click', () => {
+                state.resourceType = option.dataset.option;
+                selectOption(option, '#step-1 .option-card', step1Next);
+            });
+        });
+
+        step1Next.addEventListener('click', () => {
+            showScreen('step-2');
+            
+            // We don't run any scripts in the background here as per your instructions
+        });
+
+        // Step 2 options
+        step2.querySelectorAll('.option-card').forEach(option => {
+            option.addEventListener('click', () => {
+                state.solutionType = option.dataset.option;
+                selectOption(option, '#step-2 .option-card', step2Next);
+            });
+        });
+
+        step2Back.addEventListener('click', () => {
+            showScreen('step-1');
+        });
+
+        step2Next.addEventListener('click', () => {
+            if (state.solutionType === 'open-source') {
+                showScreen('step-3-open-source');
+            } else {
+                // For CloudWatch, start deployment directly
+                state.specificTool = 'cloudwatch';
+                deployCloudWatch();
+            }
+        });
+
+        // Step 3 (Open Source) options
+        step3OpenSource.querySelectorAll('.option-card').forEach(option => {
+            option.addEventListener('click', () => {
+                state.specificTool = option.dataset.option;
+                selectOption(option, '#step-3-open-source .option-card', step3OpenSourceNext);
+            });
+        });
+
+        step3OpenSourceBack.addEventListener('click', () => {
+            showScreen('step-2');
+        });
+
+        step3OpenSourceNext.addEventListener('click', () => {
+            deployOpenSource();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Targets - Prometheus</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+            background: #f0f2f5;
+            margin: 0;
+            padding: 0;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        nav {
+            background: linear-gradient(135deg, #1a237e, #0d47a1);
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        nav h1 {
+            color: #fff;
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            height: 40px;
+            width: auto;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-button {
+            background: transparent;
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 0.8rem 1.2rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .nav-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .welcome-section {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .welcome-section h1 {
+            color: #1a237e;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-group {
+            background: #fff;
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .form-group-number {
+            color: #1a237e;
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        label {
+            display: block;
+            color: #555;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 0.8rem;
+            margin-bottom: 1rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #1a237e;
+            box-shadow: 0 0 0 2px rgba(26, 35, 126, 0.1);
+        }
+
+        .remove-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: #ff5252;
+            color: #fff;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .remove-btn:hover {
+            background: #ff1744;
+            transform: translateY(-2px);
+        }
+
+        .add-more-btn {
+            background: linear-gradient(135deg, #43a047, #2e7d32);
+            color: #fff;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+
+        .add-more-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .submit-button {
+            background: linear-gradient(135deg, #1a237e, #0d47a1);
+            color: #fff;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .submit-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-text {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <h1>
+            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0id2hpdGUiPjxwYXRoIGQ9Ik0yMCA0QzExLjggNCA1IDEwLjggNSAxOXM2LjggMTUgMTUgMTUgMTUtNi44IDE1LTE1UzI4LjIgNCAyMCA0em0wIDI3Yy02LjYgMC0xMi01LjQtMTItMTJzNS40LTEyIDEyLTEyIDEyIDUuNCAxMiAxMi01LjQgMTItMTIgMTJ6Ii8+PHBhdGggZD0iTTIwIDEwYy01IDAtOSA0LTkgOXM0IDkgOSA5IDktNCA5LTktNC05LTktOXptMCAxNmMtMy45IDAtNy0zLjEtNy03czMuMS03IDctNyA3IDMuMSA3IDctMy4xIDctNyA3eiIvPjwvc3ZnPg=="
+                alt="Prometheus Logo" class="logo">
+            Prometheus Targets
+        </h1>
+        <div class="nav-links">
+            <a href="/" class="nav-button">Home</a>
+            <a href="/add_targets" class="nav-button">Add Targets</a>
+            <a href="/install_prometheus" class="nav-button">Install Prometheus</a>
+            <a href="/install_grafana" class="nav-button">Install Grafana</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="welcome-section">
+            <h1>Add Monitoring Targets</h1>
+            <p class="info-text">Configure the targets you want Prometheus to monitor. Add multiple targets and
+                customize their scrape settings.</p>
+        </div>
+
+        <form method="POST" action="/add_targets">
+            <div id="target-forms">
+                <div class="form-group">
+                    <div class="form-group-number">Target 1</div>
+                    <label for="job_name_0">Job Name:</label>
+                    <input type="text" id="job_name_0" name="job_name_0" placeholder="e.g., node_exporter" required>
+
+                    <label for="target_0">Target (IP:Port):</label>
+                    <input type="text" id="target_0" name="target_0" placeholder="e.g., 192.168.1.100:9100" required>
+
+                    <label for="scrape_interval_0">Scrape Interval (seconds):</label>
+                    <input type="text" id="scrape_interval_0" name="scrape_interval_0" placeholder="Default: 15s"
+                        value="15s">
+
+                    <label for="scrape_timeout_0">Scrape Timeout (seconds):</label>
+                    <input type="text" id="scrape_timeout_0" name="scrape_timeout_0" placeholder="Default: 10s"
+                        value="10s">
+
+                    <button type="button" class="remove-btn" onclick="removeTargetForm(this)">Remove</button>
+                </div>
+            </div>
+
+            <button type="button" class="add-more-btn" onclick="addTargetForm()">Add More Targets</button>
+            <button type="submit" class="submit-button">Save Configuration</button>
+        </form>
+    </div>
+
+    <script>
+        let targetCount = 1;
+
+        function addTargetForm() {
+            const targetForms = document.getElementById('target-forms');
+
+            const formGroup = document.createElement('div');
+            formGroup.className = 'form-group';
+
+            formGroup.innerHTML = `
+                <div class="form-group-number">Target ${targetCount + 1}</div>
+                <label for="job_name_${targetCount}">Job Name:</label>
+                <input type="text" id="job_name_${targetCount}" name="job_name_${targetCount}" placeholder="e.g., node_exporter" required>
+
+                <label for="target_${targetCount}">Target (IP:Port):</label>
+                <input type="text" id="target_${targetCount}" name="target_${targetCount}" placeholder="e.g., 192.168.1.100:9100" required>
+
+                <label for="scrape_interval_${targetCount}">Scrape Interval (seconds):</label>
+                <input type="text" id="scrape_interval_${targetCount}" name="scrape_interval_${targetCount}" placeholder="Default: 15s" value="15s">
+
+                <label for="scrape_timeout_${targetCount}">Scrape Timeout (seconds):</label>
+                <input type="text" id="scrape_timeout_${targetCount}" name="scrape_timeout_${targetCount}" placeholder="Default: 10s" value="10s">
+
+                <button type="button" class="remove-btn" onclick="removeTargetForm(this)">Remove</button>
+            `;
+
+            targetForms.appendChild(formGroup);
+            targetCount++;
+        }
+
+        function removeTargetForm(button) {
+            const formGroup = button.parentElement;
+            formGroup.remove();
+
+            const targetForms = document.querySelectorAll('.form-group');
+            targetCount = 0;
+            targetForms.forEach((group, index) => {
+                const numberElement = group.querySelector('.form-group-number');
+                numberElement.textContent = `Target ${index + 1}`;
+
+                group.querySelectorAll('input').forEach(input => {
+                    const name = input.getAttribute('name');
+                    const newName = name.replace(/\d+/, index);
+                    input.setAttribute('name', newName);
+                    input.setAttribute('id', newName);
+                });
+
+                group.querySelectorAll('label').forEach(label => {
+                    const htmlFor = label.getAttribute('for');
+                    const newFor = htmlFor.replace(/\d+/, index);
+                    label.setAttribute('for', newFor);
+                });
+
+                targetCount++;
+            });
+        }
+    </script>
+</body>
+
+</html>

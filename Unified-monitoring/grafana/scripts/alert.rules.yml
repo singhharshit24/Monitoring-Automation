@@ -1,0 +1,57 @@
+groups:
+- name: high_cpu_usage
+  rules:
+  - alert: HighCPUUsage
+    annotations:
+      description: CPU usage on {{ $labels.instance }} is above 75% for more than
+        2 minutes.
+      summary: High CPU usage detected
+    expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))
+      * 100) > 75
+    for: 2m
+    labels:
+      severity: critical
+- name: low_disk_space
+  rules:
+  - alert: LowDiskSpace
+    annotations:
+      description: Disk space on {{ $labels.instance }} is below 70.0% for more than
+        2 minutes.
+      summary: Low disk space detected
+    expr: node_filesystem_free_bytes / node_filesystem_size_bytes < 0.7
+    for: 2m
+    labels:
+      severity: critical
+- name: high_memory_usage
+  rules:
+  - alert: HighMemoryUsage
+    annotations:
+      description: 'Memory usage is above 35% for more than 5 minutes on instance
+        {{ $labels.instance }}. Total memory: {{ $value }}.'
+      summary: High Memory Usage on {{ $labels.instance }}
+    expr: (node_memory_MemTotal - node_memory_MemAvailable) / node_memory_MemTotal
+      * 100 > 35
+    for: 5m
+    labels:
+      severity: critical
+- name: instance_status
+  rules:
+  - alert: InstanceDown
+    annotations:
+      description: '{{ $labels.instance }} is Down.'
+      summary: Instance is Down {{ $labels.instance }}
+    expr: up == 0
+    for: 1m
+    labels:
+      severity: critical
+- name: network_receive_bytes
+  rules:
+  - alert: HighNetworkTraffic
+    annotations:
+      description: The inbound network traffic on host {{ $labels.instance }} has
+        exceeded 100 MB/s for 5 minutes.
+      summary: High network traffic on host {{ $labels.instance }}
+    expr: node_network_receive_bytes > 100e6
+    for: 5m
+    labels:
+      severity: warning

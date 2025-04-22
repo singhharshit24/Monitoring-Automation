@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Observability Platform</title>
+    <link rel="icon" href="https://searce.com/assets/images/favicon/favicon-32x32.png" type="image/png" sizes="32x32">
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+            background: #f0f2f5 url('https://searce.com/assets/images/home-hero-bg.svg') no-repeat center center fixed;
+            background-size: cover;
+            margin: 0;
+            padding: 0;
+            color: #333;
+            line-height: 1.6;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Reduced overlay opacity for better background visibility */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(240, 242, 245, 0.75);
+            z-index: 0;
+        }
+
+        nav {
+            background: linear-gradient(135deg, #1a237e, #0d47a1);
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 1;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        /* Made cards slightly more transparent to better show background */
+        .welcome-section,
+        .tool-card,
+        .feature-item {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+
+        /* Rest of the existing styles remain unchanged */
+        nav h1 {
+            color: #fff;
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            height: 40px;
+            width: auto;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-button {
+            background: transparent;
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 0.8rem 1.2rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .nav-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .welcome-section {
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .welcome-section h1 {
+            color: #1a237e;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .tool-card {
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-5px);
+            cursor: pointer;
+        }
+
+        .tool-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .tool-header img {
+            width: 40px;
+            height: 40px;
+        }
+
+        .tool-header h2 {
+            margin: 0;
+            color: #1a237e;
+            font-size: 1.3rem;
+        }
+
+        .features-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .feature-item {
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid rgba(224, 224, 224, 0.5);
+        }
+
+        .feature-item h3 {
+            color: #1a237e;
+            margin-top: 0;
+        }
+
+        .info-text {
+            color: #666;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <h1>
+            <img src="https://searce.com/assets/images/favicon/favicon-32x32.png" alt="Prometheus Logo" class="logo">
+            Observability Platform
+        </h1>
+        <div class="nav-links">
+            <form action="/install_prometheus" method="GET" style="margin: 0;">
+                <button class="nav-button" type="submit">Install Prometheus</button>
+            </form>
+            <form action="/add_targets" style="margin: 0;">
+                <button class="nav-button" type="submit">Add Targets</button>
+            </form>
+            <form action="/install_grafana" method="GET" style="margin: 0;">
+                <button class="nav-button" type="submit">Install Grafana</button>
+            </form>
+            <form method="GET" action="/node_exporter" style="margin: 0;">
+                <button class="nav-button" type="submit">Install Node Exporter</button>
+            </form>
+            <form method="GET" action="/alertmanager" style="margin: 0;">
+                <button class="nav-button" type="submit">Configure Alertmanager</button>
+            </form>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="welcome-section">
+            <h1>Welcome to Your Observability Platform</h1>
+            <p class="info-text">Set up comprehensive monitoring and alerting for your infrastructure with
+                industry-leading
+                tools.</p>
+        </div>
+
+        <div class="tools-grid">
+            <a href="/install_prometheus" class="tool-card">
+                <div class="tool-header">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0iI2U2NTIyYyI+PHBhdGggZD0iTTIwIDRDMTEuOCA0IDUgMTAuOCA1IDE5czYuOCAxNSAxNSAxNSAxNS02LjggMTUtMTVTMjguMiA0IDIwIDR6bTAgMjdjLTYuNiAwLTEyLTUuNC0xMi0xMnM1LjQtMTIgMTItMTIgMTIgNS40IDEyIDEyLTUuNCAxMi0xMiAxMnoiLz48cGF0aCBkPSJNMjAgMTBjLTUgMC05IDQtOSA5czQgOSA5IDkgOS00IDktOS00LTktOS05em0wIDE2Yy0zLjkgMC03LTMuMS03LTdzMy4xLTcgNy03IDcgMy4xIDcgNy0zLjEgNy03IDd6Ii8+PC9zdmc+"
+                        alt="Prometheus">
+                    <h2>Prometheus</h2>
+                </div>
+                <p class="info-text">Open-source monitoring and alerting toolkit designed for reliability and
+                    scalability.
+                </p>
+            </a>
+
+            <a href="/install_grafana" class="tool-card">
+                <div class="tool-header">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0iIzBhYjFiOCI+PHBhdGggZD0iTTM1IDIwYzAtOC4zLTYuNy0xNS0xNS0xNVM1IDExLjcgNSAyMHM2LjcgMTUgMTUgMTUgMTUtNi43IDE1LTE1ek0yMCAzMmMtNi42IDAtMTItNS40LTEyLTEyczUuNC0xMiAxMi0xMiAxMiA1LjQgMTIgMTItNS40IDEyLTEyIDEyeiIvPjxwYXRoIGQ9Ik0yNiAyMGMwLTMuMy0yLjctNi02LTZzLTYgMi43LTYgNiAyLjcgNiA2IDYgNi0yLjcgNi02eiIvPjwvc3ZnPg=="
+                        alt="Grafana">
+                    <h2>Grafana</h2>
+                </div>
+                <p class="info-text">Beautiful dashboards and visualizations for your metrics, logs, and traces.</p>
+            </a>
+
+            <a href="/alertmanager" class="tool-card">
+                <div class="tool-header">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0iI2ZmNTI1MiI+PHBhdGggZD0iTTIwIDVjLTguMjg0IDAtMTUgNi43MTYtMTUgMTUgMCA4LjI4NCA2LjcxNiAxNSAxNSAxNSA4LjI4NCAwIDE1LTYuNzE2IDE1LTE1IDAtOC4yODQtNi43MTYtMTUtMTUtMTV6bTAgMjdjLTYuNjI3IDAtMTItNS4zNzMtMTItMTJzNS4zNzMtMTIgMTItMTIgMTIgNS4zNzMgMTIgMTItNS4zNzMgMTItMTIgMTJ6Ii8+PHBhdGggZD0iTTIxLjUgMTEuNWgtM3YxMGg4di0zSDE4di03eiIvPjwvc3ZnPg=="
+                        alt="Alertmanager">
+                    <h2>Alertmanager</h2>
+                </div>
+                <p class="info-text">Handles alerts sent by Prometheus server and routes them to appropriate receivers.
+                </p>
+            </a>
+        </div>
+
+        <div class="features-list">
+            <div class="feature-item">
+                <h3>Metrics Collection</h3>
+                <p class="info-text">Collect metrics from various sources including applications, servers, and databases
+                    using Prometheus exporters.</p>
+            </div>
+
+            <div class="feature-item">
+                <h3>Visualization</h3>
+                <p class="info-text">Create beautiful, interactive dashboards with Grafana to visualize your metrics and
+                    monitor system health.</p>
+            </div>
+
+            <div class="feature-item">
+                <h3>Alerting</h3>
+                <p class="info-text">Set up sophisticated alerting rules and notification channels to stay informed
+                    about system issues.</p>
+            </div>
+
+            <div class="feature-item">
+                <h3>Node Monitoring</h3>
+                <p class="info-text">Monitor system resources like CPU, memory, disk usage, and network traffic with
+                    Node Exporter.</p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

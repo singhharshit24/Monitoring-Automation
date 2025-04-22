@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %}</title>
+    <style>
+        .title {
+            padding-top: 10px;
+            font-size: 2.8rem;
+            font-weight: bold;
+            text-align: center;
+            color: #333;
+        }
+
+        .title span {
+            background: linear-gradient(to right, #0073e6, #00c6ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        h2,
+        h3 {
+            color: #333;
+            text-align: left;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        .form-wrapper {
+            width: 70%;
+            margin: 10px auto;
+        }
+
+        form {
+            background: white;
+            padding: 20px;
+            margin: 10px 0 10px 0;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: left;
+            background-color: #e7f3ff;
+        }
+
+        label {
+            font-weight: bold;
+            margin-top: 10px;
+            display: block;
+            color: #333;
+            font-family: 'Times New Roman', Times, serif;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: all 0.3s ease-in-out;
+            background-color: #f0f8ff;
+        }
+
+        input {
+            width: 96%;
+            padding: 10px;
+            margin: 5px 0 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: all 0.3s ease-in-out;
+            background-color: #f0f8ff;
+        }
+
+        input:hover,
+        select:hover {
+            border-color: #007bff;
+            box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
+            background-color: #f0f8ff;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: #007bff;
+            /* Blue border when selected */
+            box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
+            /* Soft glow effect */
+            outline: 5px auto -webkit-focus-ring-color;
+            background-color: #f0f8ff;
+            /* Light background for focus effect */
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .button-container {
+            text-align: center;
+        }
+
+        button {
+            padding: 12px 20px;
+            font-size: 16px;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: 0.3s;
+            background-color: #28a745;
+        }
+
+        button:hover {
+            background-color: #0064ff;
+        }
+
+        body {
+            text-align: center;
+            background: linear-gradient(to right, #f4f4f4, #e3eaf8);
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Reset and Global Styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Full-Width Navbar (Not Fixed) */
+        .navbar {
+            width: 100%;
+            background: linear-gradient(to right, #007bff, #6610f2);
+            padding: 15px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            /* Ensures it stays at the top without being fixed */
+        }
+
+        /* Logo Styling */
+        .navbar .logo {
+            font-size: 22px;
+            font-weight: bold;
+            color: white;
+        }
+
+        /* Navbar Links */
+        .navbar ul {
+            list-style: none;
+            display: flex;
+            gap: 25px;
+        }
+
+        .navbar ul li {
+            display: inline;
+        }
+
+        .navbar ul li a {
+            text-decoration: none;
+            font-size: 16px;
+            color: white;
+            padding: 10px 20px;
+            transition: 0.3s;
+            border-radius: 5px;
+        }
+
+        .navbar ul li a:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Responsive Design for Mobile */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                text-align: center;
+                padding: 15px;
+            }
+
+            .navbar ul {
+                flex-direction: column;
+                gap: 10px;
+                margin-top: 10px;
+            }
+
+            .navbar ul li a {
+                display: block;
+            }
+        }
+    </style>
+    {% block additional_css %}{% endblock %}
+</head>
+
+<body>
+    <!-- Navbar -->
+    <div class="navbar">
+        <div class="logo">🔍 Observability Accelerator on K8s 🚀</div>
+        <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/eks">EKS Setup</a></li>
+            <li><a href="/gke">GKE Setup</a></li>
+            <li><a href="/documentation">Documentation</a></li>
+        </ul>
+    </div>
+
+    {% block content %}
+    {% endblock %}
+
+    {% block scripts %}
+    {% endblock %}
+</body>
+
+</html>
