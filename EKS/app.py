@@ -5,6 +5,8 @@ import os
 import time
 import json
 import logging
+import boto3
+from botocore.exceptions import ClientError
 
 app = Flask(__name__)
 
@@ -153,6 +155,51 @@ def deployment_progress():
             yield f"data: {json.dumps(deployment_progress)}\n\n"
             time.sleep(0.5)
     return Response(generate(), mimetype='text/event-stream')
+
+@app.route('/api/fetch-instances', methods=['POST'])
+def fetch_instances():
+    try:
+        data = request.get_json()
+        region = data.get('region')
+        
+        if not region:
+            return jsonify({'error': 'Region is required'}), 400
+
+        # Create EC2 client without explicitly providing credentials
+        # It will automatically use the IAM role attached to the instance
+        ec2 = boto3.client('ec2', region_name=region)
+
+        # Fetch running instances
+        response = ec2.describe_instances(
+            Filters=[{'Name': 'instance-state-name', 'Values': ['running']}]
+        )
+
+        instances = []
+        for reservation in response['Reservations']:
+            for instance in reservation['Instances']:
+                instance_data = {
+                    'id': instance['InstanceId'],
+                    'ip': instance.get('PrivateIpAddress', ''),
+                    'name': next((tag['Value'] for tag in instance.get('Tags', []) 
+                                if tag['Key'] == 'Name'), 'Unnamed')
+                }
+                instances.append(instance_data)
+
+        return jsonify({
+            'success': True,
+            'instances': instances
+        })
+
+    except ClientError as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': 'An unexpected error occurred'
+        }), 500
 
 @app.route("/deploy", methods=["POST"])
 def deploy():

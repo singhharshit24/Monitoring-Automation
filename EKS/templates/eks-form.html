@@ -506,8 +506,8 @@
 
             <!-- EC2 Instance Selection (hidden initially) -->
             <div id="ec2InstanceSection" class="hidden">
-                <div class="info-icon" data-tooltip="Select the AWS Region where the cluster is located.">
-                    <label for="EC2_REGION">Region</label>
+                <div class="info-icon" data-tooltip="Select AWS Region for Node Exporter installation.">
+                    <label for="EC2_REGION">Select a Region</label>
                     <span class="icon">i</span>
                 </div>
                 <select class="form-control" id="EC2_REGION" name="EC2_REGION" required>
@@ -597,9 +597,71 @@
 {% block scripts %}
 <script>
     function toggleEC2Section() {
+        // const strategy = document.getElementById("ENABLE_EC2_MONITORING").value;
+        // document.getElementById("ec2InstanceSection").classList.toggle("hidden", strategy !== "1");
         const strategy = document.getElementById("ENABLE_EC2_MONITORING").value;
-        document.getElementById("ec2InstanceSection").classList.toggle("hidden", strategy !== "1");
+        const ec2Section = document.getElementById("ec2InstanceSection");
+
+        if (strategy === "1") { // If "Yes" is selected
+            ec2Section.classList.remove("hidden");
+            fetchRunningInstances();
+        } else {
+            ec2Section.classList.add("hidden");
+        }
     }
+
+    async function fetchRunningInstances() {
+        try {
+            const region = document.getElementById("EC2_REGION").value;
+            const response = await fetch('/api/fetch-instances', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ region: region })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch instances');
+            }
+
+            const data = await response.json();
+            updateInstanceList(data.instances);
+        } catch (error) {
+            console.error('Error fetching instances:', error);
+            showAlert("Failed to fetch EC2 instances. Please try again.", "error");
+        }
+    }
+
+    function updateInstanceList(instances) {
+        const container = document.querySelector('#ec2InstanceSection p + div');
+        if (!container) return;
+
+        if (!instances || instances.length === 0) {
+            container.innerHTML = '<p><em>No running EC2 instances found.</em></p>';
+            return;
+        }
+
+        const instanceHTML = instances.map(instance => `
+        <label>
+            <input type="checkbox" 
+                   class="ec2-instance" 
+                   name="EC2_SELECTION" 
+                   value="${instance.ip}"
+                   onchange="togglePemUpload()">
+            ${instance.name || 'Unnamed'} (${instance.id}) - ${instance.ip}
+        </label><br>
+    `).join('');
+
+        container.innerHTML = instanceHTML;
+    }
+
+    // Add event listener for region change
+    document.getElementById("EC2_REGION").addEventListener('change', function () {
+        if (document.getElementById("ENABLE_EC2_MONITORING").value === "1") {
+            fetchRunningInstances();
+        }
+    });
 
     function togglePrometheusStorageFields() {
         const strategy = document.getElementById("PROMETHEUS_STORAGE_CHOICE").value;
