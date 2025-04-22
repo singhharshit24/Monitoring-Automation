@@ -270,6 +270,7 @@
                 <optgroup label="Asia Pacific">
                     <option value="ap-east-1">Asia Pacific (Hong Kong) - ap-east-1</option>
                     <option value="ap-south-1">Asia Pacific (Mumbai) - ap-south-1</option>
+                    <option value="ap-south-2">Asia Pacific (Hyderabad) - ap-south-2</option>
                     <option value="ap-northeast-1">Asia Pacific (Tokyo) - ap-northeast-1</option>
                     <option value="ap-northeast-2">Asia Pacific (Seoul) - ap-northeast-2</option>
                     <option value="ap-northeast-3">Asia Pacific (Osaka) - ap-northeast-3</option>
@@ -498,7 +499,7 @@
                     <label for="ENABLE_EC2_MONITORING">Select Grafana Storage Choice</label>
                     <span class="icon">i</span>
                 </div>
-                <select id="ENABLE_EC2_MONITORING" name="ENABLE_EC2_MONITORING">
+                <select id="ENABLE_EC2_MONITORING" name="ENABLE_EC2_MONITORING" onchange="toggleEC2Section()">
                     <option value="2">No</option>
                     <option value="1">Yes</option>
                 </select>
@@ -510,7 +511,7 @@
                     <label for="EC2_REGION">Select a Region</label>
                     <span class="icon">i</span>
                 </div>
-                <select class="form-control" id="EC2_REGION" name="EC2_REGION" onchange="toggleEC2Section()" required>
+                <select class="form-control" id="EC2_REGION" name="EC2_REGION" required>
                     <option value="">Select a region</option>
 
                     <optgroup label="North America">
@@ -537,6 +538,7 @@
                     <optgroup label="Asia Pacific">
                         <option value="ap-east-1">Asia Pacific (Hong Kong) - ap-east-1</option>
                         <option value="ap-south-1">Asia Pacific (Mumbai) - ap-south-1</option>
+                        <option value="ap-south-2">Asia Pacific (Hyderabad) - ap-south-2</option>
                         <option value="ap-northeast-1">Asia Pacific (Tokyo) - ap-northeast-1</option>
                         <option value="ap-northeast-2">Asia Pacific (Seoul) - ap-northeast-2</option>
                         <option value="ap-northeast-3">Asia Pacific (Osaka) - ap-northeast-3</option>
