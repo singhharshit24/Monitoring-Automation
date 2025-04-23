@@ -262,6 +262,53 @@
         border-color: #80bdff;
         box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
     }
+
+    .custom-file-upload {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .file-input-hidden {
+        display: none;
+    }
+
+    .btn-outline-primary {
+        color: #007bff;
+        border-color: #007bff;
+        background-color: transparent;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        border-radius: 0.2rem;
+        cursor: pointer;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .btn-outline-primary:hover {
+        color: #fff;
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+
+    .selected-file-name {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-left: 0.5rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 150px;
+    }
+
+    .pem-upload-section {
+        transition: all 0.3s ease;
+    }
+
+    /* Optional: Add icon styles if you're using Font Awesome */
+    .fas.fa-upload {
+        margin-right: 4px;
+    }
 </style>
 {% endblock %}
 
@@ -759,18 +806,25 @@
                                        name="EC2_SELECTION" 
                                        value="${instance.ip}"
                                        data-instance-id="${instance.id}"
-                                       onchange="handlePemUpload(this, '${instance.id}')">
+                                       onchange="handlePemUpload('${instance.id}')">
                             </td>
                             <td>${instance.name || 'Unnamed'}</td>
                             <td>${instance.id}</td>
                             <td>${instance.ip}</td>
                             <td>
                                 <div id="pemSection-${instance.id}" class="pem-upload-section" style="display:none;">
-                                    <input type="file" 
-                                           name="pem_file_${instance.id}" 
-                                           id="pem_file_${instance.id}" 
-                                           accept=".pem"
-                                           class="form-control form-control-sm">
+                                    <div class="custom-file-upload">
+                                        <label for="pem_file_${instance.id}" class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-upload"></i> Choose PEM File
+                                        </label>
+                                        <input type="file" 
+                                               name="pem_file_${instance.id}" 
+                                               id="pem_file_${instance.id}" 
+                                               accept=".pem"
+                                               class="file-input-hidden"
+                                               onchange="updateFileName('${instance.id}')">
+                                        <span id="fileName-${instance.id}" class="selected-file-name"></span>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -788,18 +842,32 @@
         } else {
             container.appendChild(instancesDiv);
         }
-
     }
 
     // Add this function to handle PEM file upload visibility
     function handlePemUpload() {
         const pemSection = document.getElementById(`pemSection-${instanceId}`);
+        const checkbox = document.querySelector(`input[data-instance-id="${instanceId}"]`);
+
         if (checkbox.checked) {
             pemSection.style.display = 'block';
         } else {
             pemSection.style.display = 'none';
             // Clear the file input when unchecked
             document.getElementById(`pem_file_${instanceId}`).value = '';
+            document.getElementById(`fileName-${instanceId}`).textContent = '';
+        }
+    }
+
+    // Function to update the file name display
+    function updateFileName(instanceId) {
+        const fileInput = document.getElementById(`pem_file_${instanceId}`);
+        const fileNameDisplay = document.getElementById(`fileName-${instanceId}`);
+
+        if (fileInput.files.length > 0) {
+            fileNameDisplay.textContent = fileInput.files[0].name;
+        } else {
+            fileNameDisplay.textContent = '';
         }
     }
 
