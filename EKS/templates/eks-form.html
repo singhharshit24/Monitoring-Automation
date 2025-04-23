@@ -685,42 +685,7 @@
                 {% if instances %}
                 <div class="instances-container">
                     <!-- The instances table or "No instances" message will be inserted here dynamically -->
-                    <!-- <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Select</th>
-                                <th>Instance Name</th>
-                                <th>Instance ID</th>
-                                <th>IP Address</th>
-                                <th>PEM File</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for ec2 in instances %}
-                            <tr>
-                                <td>
-                                    <input type="checkbox" class="ec2-instance form-check-input" name="EC2_SELECTION"
-                                        value="{{ ec2['ip'] }}" data-instance-id="{{ ec2['id'] }}"
-                                        onchange="handlePemUpload(this, '{{ ec2['id'] }}')">
-                                </td>
-                                <td>{{ ec2['name'] }}</td>
-                                <td>{{ ec2['id'] }}</td>
-                                <td>{{ ec2['ip'] }}</td>
-                                <td>
-                                    <div id="pemSection-{{ ec2['id'] }}" class="pem-upload-section"
-                                        style="display:none;">
-                                        <input type="file" name="pem_file_{{ ec2['id'] }}" id="pem_file_{{ ec2['id'] }}"
-                                            accept=".pem" class="form-control form-control-sm">
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table> -->
                 </div>
-                <!-- {% else %}
-                <p><em>No running EC2 instances found.</em></p>
-                {% endif %} -->
             </div>
         </div>
     </form>
