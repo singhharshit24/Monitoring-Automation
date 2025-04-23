@@ -727,6 +727,11 @@
 
 {% block scripts %}
 <script>
+    document.getElementById("EC2_REGION").addEventListener('change', function () {
+        if (document.getElementById("ENABLE_EC2_MONITORING").value === "1") {
+            fetchRunningInstances();
+        }
+    });
     async function fetchRunningInstances() {
         try {
             const region = document.getElementById("EC2_REGION").value;
@@ -737,7 +742,10 @@
 
             // Show loading state
             const container = document.getElementById('ec2InstanceSection');
-            container.innerHTML += '<div id="loading">Loading instances...</div>';
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = 'loading';
+            loadingDiv.textContent = 'Loading instances...';
+            container.appendChild(loadingDiv);
 
             const response = await fetch('/api/fetch-instances', {
                 method: 'POST',
@@ -748,8 +756,10 @@
             });
 
             // Remove loading indicator
-            const loadingDiv = document.getElementById('loading');
-            if (loadingDiv) loadingDiv.remove();
+            const existingLoadingDiv = document.getElementById('loading');
+            if (existingLoadingDiv) {
+                existingLoadingDiv.remove();
+            }
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -907,8 +917,28 @@
             }
         } else {
             ec2Section.classList.add("hidden");
+            // Clear the instances when disabling monitoring
+            const instancesContainer = ec2Section.querySelector('.instances-container');
+            if (instancesContainer) {
+                instancesContainer.remove();
+            }
         }
     }
+
+    // Add loading indicator styles
+    const style = document.createElement('style');
+    style.textContent = `
+    #loading {
+        margin: 1rem 0;
+        padding: 1rem;
+        text-align: center;
+        color: #666;
+        background: #f8f9fa;
+        border-radius: 4px;
+        font-style: italic;
+    }
+`;
+    document.head.appendChild(style);
 
     function togglePrometheusStorageFields() {
         const strategy = document.getElementById("PROMETHEUS_STORAGE_CHOICE").value;
