@@ -637,7 +637,7 @@
                                 <td>
                                     <input type="checkbox" class="ec2-instance form-check-input" name="EC2_SELECTION"
                                         value="{{ ec2['ip'] }}" data-instance-id="{{ ec2['id'] }}"
-                                        onchange="handlePemUpload(this)">
+                                        onchange="handlePemUpload(this, '{{ ec2['id'] }}')">
                                 </td>
                                 <td>{{ ec2['name'] }}</td>
                                 <td>{{ ec2['id'] }}</td>
@@ -793,7 +793,6 @@
 
     // Add this function to handle PEM file upload visibility
     function handlePemUpload() {
-        const instanceId = checkbox.dataset.instanceId;
         const pemSection = document.getElementById(`pemSection-${instanceId}`);
         if (checkbox.checked) {
             pemSection.style.display = 'block';
