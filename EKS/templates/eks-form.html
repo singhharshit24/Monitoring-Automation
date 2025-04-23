@@ -202,6 +202,7 @@
         transform: scale(1.1);
     }
 
+
     .instances-container {
         margin-top: 1rem;
         margin-bottom: 1rem;
@@ -236,30 +237,30 @@
         cursor: pointer;
     }
 
-    #pemUploadSection {
-        margin-top: 1rem;
-        padding: 1rem;
-        border: 1px solid #dee2e6;
-        border-radius: 0.25rem;
-        background-color: #f8f9fa;
+    .pem-upload-section {
+        transition: all 0.3s ease;
     }
 
-    #pemUploadSection label {
-        display: block;
-        margin-bottom: 0.5rem;
-        font-weight: 500;
+    .form-control-sm {
+        font-size: 0.875rem;
+        padding: 0.25rem 0.5rem;
     }
 
-    #pem_file {
-        display: block;
-        width: 100%;
-        padding: 0.375rem 0.75rem;
-        font-size: 1rem;
-        line-height: 1.5;
-        color: #495057;
-        background-color: #fff;
-        border: 1px solid #ced4da;
-        border-radius: 0.25rem;
+    /* Style for file input */
+    .form-control[type="file"] {
+        padding: 0.375rem;
+        font-size: 0.875rem;
+    }
+
+    /* Hover effect for file input */
+    .form-control[type="file"]:hover {
+        border-color: #80bdff;
+    }
+
+    /* Focus effect for file input */
+    .form-control[type="file"]:focus {
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
     }
 </style>
 {% endblock %}
@@ -627,6 +628,7 @@
                                 <th>Instance Name</th>
                                 <th>Instance ID</th>
                                 <th>IP Address</th>
+                                <th>PEM File</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -634,11 +636,19 @@
                             <tr>
                                 <td>
                                     <input type="checkbox" class="ec2-instance form-check-input" name="EC2_SELECTION"
-                                        value="{{ ec2['ip'] }}" onchange="handlePemUpload()">
+                                        value="{{ ec2['ip'] }}" data-instance-id="{{ ec2['id'] }}"
+                                        onchange="handlePemUpload(this)">
                                 </td>
                                 <td>{{ ec2['name'] }}</td>
                                 <td>{{ ec2['id'] }}</td>
                                 <td>{{ ec2['ip'] }}</td>
+                                <td>
+                                    <div id="pemSection-{{ ec2['id'] }}" class="pem-upload-section"
+                                        style="display:none;">
+                                        <input type="file" name="pem_file_{{ ec2['id'] }}" id="pem_file_{{ ec2['id'] }}"
+                                            accept=".pem" class="form-control form-control-sm">
+                                    </div>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -647,12 +657,6 @@
                 {% else %}
                 <p><em>No running EC2 instances found.</em></p>
                 {% endif %}
-
-                <!-- PEM File Upload -->
-                <div id="pemUploadSection" style="display:none; margin-top: 1rem;">
-                    <label for="pem_file">Upload .pem file for SSH access:</label>
-                    <input type="file" name="pem_file" id="pem_file" accept=".pem" class="form-control">
-                </div>
             </div>
         </div>
     </form>
@@ -743,6 +747,7 @@
                         <th>Instance Name</th>
                         <th>Instance ID</th>
                         <th>IP Address</th>
+                        <th>PEM File</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -753,11 +758,21 @@
                                        class="ec2-instance form-check-input" 
                                        name="EC2_SELECTION" 
                                        value="${instance.ip}"
-                                       onchange="handlePemUpload()">
+                                       data-instance-id="${instance.id}"
+                                       onchange="handlePemUpload(this, '${instance.id}')">
                             </td>
                             <td>${instance.name || 'Unnamed'}</td>
                             <td>${instance.id}</td>
                             <td>${instance.ip}</td>
+                            <td>
+                                <div id="pemSection-${instance.id}" class="pem-upload-section" style="display:none;">
+                                    <input type="file" 
+                                           name="pem_file_${instance.id}" 
+                                           id="pem_file_${instance.id}" 
+                                           accept=".pem"
+                                           class="form-control form-control-sm">
+                                </div>
+                            </td>
                         </tr>
                     `).join('')}
                 </tbody>
@@ -773,17 +788,19 @@
         } else {
             container.appendChild(instancesDiv);
         }
+
     }
 
     // Add this function to handle PEM file upload visibility
     function handlePemUpload() {
-        const checkedInstances = document.querySelectorAll('.ec2-instance:checked');
-        const pemUploadSection = document.getElementById('pemUploadSection');
-
-        if (checkedInstances.length > 0) {
-            pemUploadSection.style.display = 'block';
+        const instanceId = checkbox.dataset.instanceId;
+        const pemSection = document.getElementById(`pemSection-${instanceId}`);
+        if (checkbox.checked) {
+            pemSection.style.display = 'block';
         } else {
-            pemUploadSection.style.display = 'none';
+            pemSection.style.display = 'none';
+            // Clear the file input when unchecked
+            document.getElementById(`pem_file_${instanceId}`).value = '';
         }
     }
 
