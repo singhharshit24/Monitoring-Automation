@@ -805,8 +805,7 @@
                                        class="ec2-instance form-check-input" 
                                        name="EC2_SELECTION" 
                                        value="${instance.ip}"
-                                       data-instance-id="${instance.id}"
-                                       onchange="handlePemUpload('${instance.id}')">
+                                       data-instance-id="${instance.id}">
                             </td>
                             <td>${instance.name || 'Unnamed'}</td>
                             <td>${instance.id}</td>
@@ -821,8 +820,7 @@
                                                name="pem_file_${instance.id}" 
                                                id="pem_file_${instance.id}" 
                                                accept=".pem"
-                                               class="file-input-hidden"
-                                               onchange="updateFileName('${instance.id}')">
+                                               class="file-input-hidden">
                                         <span id="fileName-${instance.id}" class="selected-file-name"></span>
                                     </div>
                                 </div>
@@ -833,6 +831,22 @@
             </table>
         `;
             instancesDiv.innerHTML = tableHTML;
+
+            // Add event listeners after creating the elements
+            const checkboxes = instancesDiv.querySelectorAll('.ec2-instance');
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function () {
+                    handlePemUpload(this);
+                });
+            });
+
+            const fileInputs = instancesDiv.querySelectorAll('input[type="file"]');
+            fileInputs.forEach(input => {
+                input.addEventListener('change', function () {
+                    const instanceId = this.id.replace('pem_file_', '');
+                    updateFileName(instanceId);
+                });
+            });
         }
 
         // Find where to insert the instances list
@@ -845,9 +859,9 @@
     }
 
     // Add this function to handle PEM file upload visibility
-    function handlePemUpload() {
+    function handlePemUpload(checkbox) {
+        const instanceId = checkbox.dataset.instanceId;
         const pemSection = document.getElementById(`pemSection-${instanceId}`);
-        const checkbox = document.querySelector(`input[data-instance-id="${instanceId}"]`);
 
         if (checkbox.checked) {
             pemSection.style.display = 'block';
@@ -865,9 +879,12 @@
         const fileNameDisplay = document.getElementById(`fileName-${instanceId}`);
 
         if (fileInput.files.length > 0) {
-            fileNameDisplay.textContent = fileInput.files[0].name;
+            const fileName = fileInput.files[0].name;
+            fileNameDisplay.textContent = fileName;
+            fileNameDisplay.title = fileName;
         } else {
             fileNameDisplay.textContent = '';
+            fileNameDisplay.removeAttribute('title');
         }
     }
 
