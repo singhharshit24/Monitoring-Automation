@@ -309,6 +309,22 @@
     .fas.fa-upload {
         margin-right: 4px;
     }
+
+    .no-instances-message {
+        margin: 1rem 0;
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        color: #6c757d;
+        text-align: center;
+    }
+
+    .alert-info {
+        color: #0c5460;
+        background-color: #d1ecf1;
+        border-color: #bee5eb;
+    }
 </style>
 {% endblock %}
 
@@ -668,7 +684,8 @@
 
                 {% if instances %}
                 <div class="instances-container">
-                    <table class="table table-hover">
+                    <!-- The instances table or "No instances" message will be inserted here dynamically -->
+                    <!-- <table class="table table-hover">
                         <thead>
                             <tr>
                                 <th>Select</th>
@@ -699,7 +716,7 @@
                             </tr>
                             {% endfor %}
                         </tbody>
-                    </table>
+                    </table> -->
                 </div>
                 {% else %}
                 <p><em>No running EC2 instances found.</em></p>
@@ -788,84 +805,90 @@
             existingInstancesDiv.remove();
         }
 
+        // Remove any existing "No instances" message
+        const existingNoInstancesMsg = container.querySelector('.no-instances-message');
+        if (existingNoInstancesMsg) {
+            existingNoInstancesMsg.remove();
+        }
+
         // Create a new div for instances
         const instancesDiv = document.createElement('div');
         instancesDiv.className = 'instances-container';
 
         if (!instances || instances.length === 0) {
-            instancesDiv.innerHTML = '<p><em>No running EC2 instances found.</em></p>';
-        } else {
-            // Create table
-            const tableHTML = `
-            <table class="table table-hover">
-                <thead>
+            // Create a styled message for no instances
+            const noInstancesDiv = document.createElement('div');
+            noInstancesDiv.className = 'alert alert-info no-instances-message';
+            noInstancesDiv.innerHTML = '<em>No running EC2 instances found.</em>';
+            container.appendChild(noInstancesDiv);
+            return; // Exit the function here
+        }
+
+        // Create table for instances
+        const tableHTML = `
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Select</th>
+                    <th>Instance Name</th>
+                    <th>Instance ID</th>
+                    <th>IP Address</th>
+                    <th>PEM File</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${instances.map(instance => `
                     <tr>
-                        <th>Select</th>
-                        <th>Instance Name</th>
-                        <th>Instance ID</th>
-                        <th>IP Address</th>
-                        <th>PEM File</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${instances.map(instance => `
-                        <tr>
-                            <td>
-                                <input type="checkbox" 
-                                       class="ec2-instance form-check-input" 
-                                       name="EC2_SELECTION" 
-                                       value="${instance.ip}"
-                                       data-instance-id="${instance.id}">
-                            </td>
-                            <td>${instance.name || 'Unnamed'}</td>
-                            <td>${instance.id}</td>
-                            <td>${instance.ip}</td>
-                            <td>
-                                <div id="pemSection-${instance.id}" class="pem-upload-section" style="display:none;">
-                                    <div class="custom-file-upload">
-                                        <label for="pem_file_${instance.id}" class="btn btn-outline-primary btn-sm">
-                                            <i class="fas fa-upload"></i> Choose PEM File
-                                        </label>
-                                        <input type="file" 
-                                               name="pem_file_${instance.id}" 
-                                               id="pem_file_${instance.id}" 
-                                               accept=".pem"
-                                               class="file-input-hidden">
-                                        <span id="fileName-${instance.id}" class="selected-file-name"></span>
-                                    </div>
+                        <td>
+                            <input type="checkbox" 
+                                   class="ec2-instance form-check-input" 
+                                   name="EC2_SELECTION" 
+                                   value="${instance.ip}"
+                                   data-instance-id="${instance.id}">
+                        </td>
+                        <td>${instance.name || 'Unnamed'}</td>
+                        <td>${instance.id}</td>
+                        <td>${instance.ip}</td>
+                        <td>
+                            <div id="pemSection-${instance.id}" class="pem-upload-section" style="display:none;">
+                                <div class="custom-file-upload">
+                                    <label for="pem_file_${instance.id}" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-upload"></i> Choose PEM File
+                                    </label>
+                                    <input type="file" 
+                                           name="pem_file_${instance.id}" 
+                                           id="pem_file_${instance.id}" 
+                                           accept=".pem"
+                                           class="file-input-hidden">
+                                    <span id="fileName-${instance.id}" class="selected-file-name"></span>
                                 </div>
-                            </td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        `;
-            instancesDiv.innerHTML = tableHTML;
+                            </div>
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+        instancesDiv.innerHTML = tableHTML;
 
-            // Add event listeners after creating the elements
-            const checkboxes = instancesDiv.querySelectorAll('.ec2-instance');
-            checkboxes.forEach(checkbox => {
-                checkbox.addEventListener('change', function () {
-                    handlePemUpload(this);
-                });
+        // Add event listeners after creating the elements
+        const checkboxes = instancesDiv.querySelectorAll('.ec2-instance');
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function () {
+                handlePemUpload(this);
             });
+        });
 
-            const fileInputs = instancesDiv.querySelectorAll('input[type="file"]');
-            fileInputs.forEach(input => {
-                input.addEventListener('change', function () {
-                    const instanceId = this.id.replace('pem_file_', '');
-                    updateFileName(instanceId);
-                });
+        const fileInputs = instancesDiv.querySelectorAll('input[type="file"]');
+        fileInputs.forEach(input => {
+            input.addEventListener('change', function () {
+                const instanceId = this.id.replace('pem_file_', '');
+                updateFileName(instanceId);
             });
-        }
+        });
 
-        // Find where to insert the instances list
-        const insertAfter = container.querySelector('p');
-        if (insertAfter && insertAfter.nextSibling) {
-            container.insertBefore(instancesDiv, insertAfter.nextSibling);
-        } else {
-            container.appendChild(instancesDiv);
-        }
+        // Insert the instances table
+        container.appendChild(instancesDiv);
     }
 
     // Add this function to handle PEM file upload visibility
