@@ -1307,9 +1307,8 @@ monitor_ec2() {
 
     for ((i=0; i<${EC2_INSTANCE_COUNT}; i++)); do
         instance_ip="${EC2_INSTANCES[$i]}"
-        instance_name="${EC2_INSTANCE_NAMES[$i]}"
         
-        echo "📦 Installing node_exporter on $instance_name ($instance_ip)..."
+        echo "📦 Installing node_exporter on ($instance_ip)..."
         
         # SSH into instance and install node_exporter
         ssh -o StrictHostKeyChecking=no -i "${EC2_PEM_FILES[$i]}" "${SSH_USER}@${instance_ip}" <<'EOF'
@@ -1354,9 +1353,9 @@ SERVICE
 EOF
 
         if [ $? -eq 0 ]; then
-            echo "✅ Successfully installed node_exporter on $instance_name ($instance_ip)"
+            echo "✅ Successfully installed node_exporter on ($instance_ip)"
         else
-            echo "❌ Failed to install node_exporter on $instance_name ($instance_ip)"
+            echo "❌ Failed to install node_exporter on ($instance_ip)"
         fi
 
         # Verify node_exporter is accessible

@@ -823,7 +823,8 @@
                                            name="pem_file_${instance.id}" 
                                            id="pem_file_${instance.id}" 
                                            accept=".pem"
-                                           class="file-input-hidden">
+                                           class="file-input-hidden"
+                                           required>
                                     <span id="fileName-${instance.id}" class="selected-file-name"></span>
                                 </div>
                             </div>
@@ -974,6 +975,24 @@
                     for (let [key, value] of singleFormData.entries()) {
                         formData.append(key, value);
                     }
+                }
+            });
+
+            // Add selected instances and their PEM files
+            const selectedInstances = document.querySelectorAll('.ec2-instance:checked');
+            selectedInstances.forEach((checkbox, index) => {
+                const instanceId = checkbox.dataset.instanceId;
+                const instanceIp = checkbox.value;
+                const instanceName = checkbox.closest('tr').querySelector('td:nth-child(2)').textContent;
+
+                formData.append(`EC2_SELECTION_${index}`, instanceIp);
+                formData.append(`EC2_ID_${index}`, instanceId);
+                formData.append(`EC2_NAME_${index}`, instanceName);
+
+                // Get the file input for this instance
+                const fileInput = document.getElementById(`pem_file_${instanceId}`);
+                if (fileInput && fileInput.files[0]) {
+                    formData.append(`pem_file_${instanceId}`, fileInput.files[0]);
                 }
             });
 

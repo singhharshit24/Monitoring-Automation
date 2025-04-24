@@ -91,9 +91,9 @@ AWS_SECRET_KEY=""
 # Enter your choice (yes/no)
 # EC2 Instances Configuration
 EC2_INSTANCES=() # Array to store IP addresses of selected instances
-EC2_INSTANCE_IDS=() # Array to store Instance IDs
-EC2_INSTANCE_NAMES=() # Array to store Instance Names
 EC2_PEM_FILES=() # Array to store paths to PEM files for each instance
+EC2_INSTANCE_IDS=() # Array to store instance IDs
+EC2_INSTANCE_NAMES=() # Array to store instance names
 
 # Count of selected instances
 EC2_INSTANCE_COUNT=0

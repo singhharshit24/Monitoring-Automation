@@ -7,8 +7,20 @@ import json
 import logging
 import boto3
 from botocore.exceptions import ClientError
+from werkzeug.utils import secure_filename
+
+UPLOAD_FOLDER = '/opt/observability/EKS/'  # or another secure location
+ALLOWED_EXTENSIONS = {'pem'}
 
 app = Flask(__name__)
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Create upload folder if it doesn't exist
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # Set up logging
 logging.basicConfig(
@@ -213,22 +225,47 @@ def deploy():
         selected_instances = []
         instance_ids = []
         instance_names = []
+        pem_file_paths = []
+
+        # Create a mapping of instance IDs to their details
+        instance_details = {}
+
+        # First, handle file uploads
+        for key in request.files:
+            if key.startswith('pem_file_'):
+                file = request.files[key]
+                instance_id = key.replace('pem_file_', '')
+                
+                if file and file.filename and allowed_file(file.filename):
+                    filename = secure_filename(f"{instance_id}_{file.filename}")
+                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                    file.save(filepath)
+                    # Set proper permissions for the PEM file
+                    os.chmod(filepath, 0o600)
+                    instance_details[instance_id] = {'pem_path': filepath}
         
         # Parse form data for EC2 instances
         for key in request.form:
             if key.startswith('EC2_SELECTION'):
-                selected_instances.append(request.form[key])  # IP addresses
-            elif key.startswith('EC2_ID'):
-                instance_ids.append(request.form[key])
-            elif key.startswith('EC2_NAME'):
-                instance_names.append(request.form[key])
+                instance_id = request.form.get(f'EC2_ID_{len(selected_instances)}')
+                selected_instances.append(request.form[key])  # IP address
+                instance_ids.append(instance_id)
+                instance_names.append(request.form.get(f'EC2_NAME_{len(selected_instances)}'))
+                
+                # Add PEM file path if it exists for this instance
+                if instance_id in instance_details:
+                    pem_file_paths.append(instance_details[instance_id]['pem_path'])
+                else:
+                    pem_file_paths.append('')
 
         # Update variables dictionary
         updated_vars = {key: request.form[key] for key in request.form}
         updated_vars['EC2_INSTANCES'] = "(" + " ".join(selected_instances) + ")"
         updated_vars['EC2_INSTANCE_IDS'] = "(" + " ".join(instance_ids) + ")"
         updated_vars['EC2_INSTANCE_NAMES'] = "(" + " ".join(instance_names) + ")"
+        updated_vars['EC2_PEM_FILES'] = "(" + " ".join(pem_file_paths) + ")"
         updated_vars['EC2_INSTANCE_COUNT'] = str(len(selected_instances))
+        
         write_variables(updated_vars, VARIABLES_FILE)
 
         deployment_progress = {"progress": 40, "status": "Preparing deployment..."}
