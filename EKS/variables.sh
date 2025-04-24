@@ -89,8 +89,25 @@ AWS_SECRET_KEY=""
 
 # Option to enable monitoring for ec2.
 # Enter your choice (yes/no)
-ENABLE_EC2_MONITORING="yes"
+# EC2 Instances Configuration
+EC2_INSTANCES=() # Array to store IP addresses of selected instances
+EC2_INSTANCE_IDS=() # Array to store Instance IDs
+EC2_INSTANCE_NAMES=() # Array to store Instance Names
+EC2_PEM_FILES=() # Array to store paths to PEM files for each instance
+
+# Count of selected instances
+EC2_INSTANCE_COUNT=0
+
+# SSH User (typically 'ec2-user' for Amazon Linux or 'ubuntu' for Ubuntu instances)
+SSH_USER="ec2-user"
+
+# Node Exporter Configuration for EC2
+NODE_EXPORTER_VERSION="1.6.1"  # Version of Node Exporter to install
+NODE_EXPORTER_PORT="9100"      # Port for Node Exporter metrics
+
+# EC2 Monitoring Configuration
+ENABLE_EC2_MONITORING=""  # Flag to indicate if EC2 monitoring is enabled
 EC2_REGION=""
-IPS=""
+NODE_EXPORTER_DOWNLOAD_URL="https://github.com/prometheus/node_exporter/releases/download/v${NODE_EXPORTER_VERSION}/node_exporter-${NODE_EXPORTER_VERSION}.linux-amd64.tar.gz"
 
 # *********************************

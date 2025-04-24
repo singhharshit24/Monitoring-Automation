@@ -1257,114 +1257,122 @@ EOF
 }
 
 monitor_ec2() {
+  if [[ "$ENABLE_EC2_MONITORING" != "yes" ]]; then
+        echo "❌ Skipping EC2 monitoring setup."
+        return 0
+    fi
 
-  if [[ "$enable_ec2_monitoring" != "yes" ]]; then
-    echo "❌ Skipping EC2 monitoring setup."
-    exit 0
-  fi
+    SECRET_NAME="additional-scrape-configs"
+    SCRAPE_FILE="prometheus-additional.yaml"
+    
+    echo "Starting EC2 monitoring setup for ${EC2_INSTANCE_COUNT} instances..."
 
-  SECRET_NAME="additional-scrape-configs"
-  SCRAPE_FILE="prometheus-additional.yaml"
-  
-  echo "Fetching EC2 instances in region: $REGION..."
-
-  # # Get instance IDs and IPs
-  # instances=$(aws ec2 describe-instances \
-  #   --region "$REGION" \
-  #   --query "Reservations[].Instances[?State.Name=='running'].{ID:InstanceId,IP:PrivateIpAddress,Name:Tags[?Key=='Name']|[0].Value}" \
-  #   --output text)
-
-  # if [[ -z "$instances" ]]; then
-  #   echo "⚠️ No running EC2 instances found in $REGION."
-  #   exit 1
-  # fi
-
-  # # Let user pick EC2s to monitor
-  # echo "Select EC2 instances to monitor (space-separated numbers):"
-  # i=1
-  # declare -A ip_map
-  # while read -r id ip name; do
-  #   echo "$i) $name ($id) - $ip"
-  #   ip_map[$i]=$ip
-  #   ((i++))
-  # done <<< "$instances"
-
-  # read -r selected
-
-  # Build target IP list
-  targets=()
-  for idx in $IPS; do
-    targets+=("${ip_map[$idx]}")
-  done
-
-  if [[ ${#targets[@]} -eq 0 ]]; then
-    echo "❌ No EC2 instances selected. Aborting."
-    exit 1
-  fi
-
-  # Generate Prometheus scrape config
-  echo "Generating Prometheus scrape config for selected EC2s..."
-
-  {
-    echo "- job_name: 'ec2-node-exporter'"
-    echo "  static_configs:"
-    echo "    - targets: ["
-    for ip in "${targets[@]}"; do
-      echo "        \"$ip:9100\","
+    # Build target IP list for Prometheus scraping
+    targets=()
+    for ip in "${EC2_INSTANCES[@]}"; do
+        if [[ -n "$ip" ]]; then
+            targets+=("$ip")
+            echo "Added target IP: $ip"
+        fi
     done
-    echo "      ]"
-  } > $SCRAPE_FILE
 
-  # Create or update the secret in Kubernetes
-  echo "Creating/updating Prometheus additional scrape config in Kubernetes..."
+    if [[ ${#targets[@]} -eq 0 ]]; then
+        echo "❌ No EC2 instances selected. Aborting."
+        return 1
+    fi
 
-  kubectl delete secret "$SECRET_NAME" -n "$NAMESPACE" --ignore-not-found
-  kubectl create secret generic "$SECRET_NAME" \
-    --from-file=prometheus-additional.yaml="$SCRAPE_FILE" \
-    -n "$NAMESPACE"
+    # Generate Prometheus scrape config
+    echo "Generating Prometheus scrape config for selected EC2s..."
+    {
+        echo "- job_name: 'ec2-node-exporter'"
+        echo "  static_configs:"
+        echo "    - targets: ["
+        for ip in "${targets[@]}"; do
+            echo "        \"$ip:${NODE_EXPORTER_PORT}\","
+        done
+        echo "      ]"
+    } > "$SCRAPE_FILE"
 
-  echo "✅ Secret '$SECRET_NAME' created in namespace '$NAMESPACE'."
+    # Create or update the secret in Kubernetes
+    echo "Creating/updating Prometheus additional scrape config in Kubernetes..."
+    kubectl delete secret "$SECRET_NAME" -n "$NAMESPACE" --ignore-not-found
+    kubectl create secret generic "$SECRET_NAME" \
+        --from-file=prometheus-additional.yaml="$SCRAPE_FILE" \
+        -n "$NAMESPACE"
 
-  # Optionally: install node exporter on selected EC2s
-  echo "Do you want to install node_exporter on the selected EC2 instances now? (yes/no)"
-  read -r install_exporter
+    echo "✅ Secret '$SECRET_NAME' created in namespace '$NAMESPACE'."
 
-if [[ "$install_exporter" == "yes" ]]; then
-  echo "Please enter the username for SSH (e.g., ubuntu, ec2-user):"
-  read -r ssh_user
+    # Install node exporter on selected EC2 instances
+    echo "Installing node_exporter on selected EC2 instances..."
 
-  echo "Please enter the path to your private key (e.g., ~/.ssh/key.pem):"
-  read -r ssh_key
+    for ((i=0; i<${EC2_INSTANCE_COUNT}; i++)); do
+        instance_ip="${EC2_INSTANCES[$i]}"
+        instance_name="${EC2_INSTANCE_NAMES[$i]}"
+        
+        echo "📦 Installing node_exporter on $instance_name ($instance_ip)..."
+        
+        # SSH into instance and install node_exporter
+        ssh -o StrictHostKeyChecking=no -i "${EC2_PEM_FILES[$i]}" "${SSH_USER}@${instance_ip}" <<'EOF'
+            # Check if node_exporter is already installed
+            if systemctl is-active --quiet node_exporter; then
+                echo "node_exporter is already running"
+                exit 0
+            fi
 
-  for ip in "${targets[@]}"; do
-    echo "Installing node_exporter on $ip..."
-    ssh -o StrictHostKeyChecking=no -i "$ssh_key" "$ssh_user@$ip" <<'EOF'
-      curl -LO https://github.com/prometheus/node_exporter/releases/download/v1.7.0/node_exporter-1.7.0.linux-amd64.tar.gz
-      tar xvf node_exporter-1.7.0.linux-amd64.tar.gz
-      sudo mv node_exporter-1.7.0.linux-amd64/node_exporter /usr/local/bin/
-      sudo useradd -rs /bin/false node_exporter
-      cat <<SERVICE | sudo tee /etc/systemd/system/node_exporter.service
+            # Download and install node_exporter
+            wget "${NODE_EXPORTER_DOWNLOAD_URL}" -O node_exporter.tar.gz
+            tar xvf node_exporter.tar.gz
+            sudo mv node_exporter-*/node_exporter /usr/local/bin/
+            rm -rf node_exporter*
+
+            # Create node_exporter user
+            sudo useradd -rs /bin/false node_exporter || true
+
+            # Create systemd service
+            sudo tee /etc/systemd/system/node_exporter.service <<SERVICE
 [Unit]
 Description=Node Exporter
 After=network.target
 
 [Service]
 User=node_exporter
-ExecStart=/usr/local/bin/node_exporter
+Group=node_exporter
+Type=simple
+ExecStart=/usr/local/bin/node_exporter --web.listen-address=:${NODE_EXPORTER_PORT}
 
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target
 SERVICE
-      sudo systemctl daemon-reexec
-      sudo systemctl daemon-reload
-      sudo systemctl enable node_exporter
-      sudo systemctl start node_exporter
+
+            # Start and enable the service
+            sudo systemctl daemon-reload
+            sudo systemctl start node_exporter
+            sudo systemctl enable node_exporter
+
+            # Verify the service is running
+            sudo systemctl status node_exporter --no-pager
 EOF
-    echo "✅ node_exporter setup complete on $ip."
-  done
-else
-  echo "⚠️ Skipped node_exporter installation. Please ensure it is running on EC2s."
-fi
+
+        if [ $? -eq 0 ]; then
+            echo "✅ Successfully installed node_exporter on $instance_name ($instance_ip)"
+        else
+            echo "❌ Failed to install node_exporter on $instance_name ($instance_ip)"
+        fi
+
+        # Verify node_exporter is accessible
+        timeout 5 curl -s "http://${instance_ip}:${NODE_EXPORTER_PORT}/metrics" >/dev/null
+        if [ $? -eq 0 ]; then
+            echo "✅ node_exporter metrics endpoint is accessible on $instance_ip:${NODE_EXPORTER_PORT}"
+        else
+            echo "❌ Cannot access node_exporter metrics endpoint on $instance_ip:${NODE_EXPORTER_PORT}"
+            echo "Please check security groups and firewall settings"
+        fi
+
+        echo "------------------------"
+    done
+
+    echo "🎉 EC2 monitoring setup completed!"
+    echo "📊 Prometheus will scrape metrics from these instances: ${targets[*]}"
 }
 
 check_and_add_helm_repo() {

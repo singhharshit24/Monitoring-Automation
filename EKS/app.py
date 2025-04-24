@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 BASE_DIR = "/opt/observability/EKS/"
 VARIABLES_FILE = "variables.sh"
 GKE_VARIABLES_FILE = "gke-variables.sh"
-SETUP_SCRIPT = f"{BASE_DIR}monitoring_setup.sh"
+SETUP_SCRIPT = f"{BASE_DIR}test.sh"
 GKE_SETUP_SCRIPT = f"{BASE_DIR}gke_monitoring_setup.sh"
 
 deployment_progress = {"progress": 0, "status": "Initializing..."}
@@ -209,7 +209,26 @@ def deploy():
         
         # Update variables
         deployment_progress = {"progress": 20, "status": "Updating configuration..."}
+        # Get selected EC2 instances
+        selected_instances = []
+        instance_ids = []
+        instance_names = []
+        
+        # Parse form data for EC2 instances
+        for key in request.form:
+            if key.startswith('EC2_SELECTION'):
+                selected_instances.append(request.form[key])  # IP addresses
+            elif key.startswith('EC2_ID'):
+                instance_ids.append(request.form[key])
+            elif key.startswith('EC2_NAME'):
+                instance_names.append(request.form[key])
+
+        # Update variables dictionary
         updated_vars = {key: request.form[key] for key in request.form}
+        updated_vars['EC2_INSTANCES'] = "(" + " ".join(selected_instances) + ")"
+        updated_vars['EC2_INSTANCE_IDS'] = "(" + " ".join(instance_ids) + ")"
+        updated_vars['EC2_INSTANCE_NAMES'] = "(" + " ".join(instance_names) + ")"
+        updated_vars['EC2_INSTANCE_COUNT'] = str(len(selected_instances))
         write_variables(updated_vars, VARIABLES_FILE)
 
         deployment_progress = {"progress": 40, "status": "Preparing deployment..."}

@@ -615,7 +615,7 @@
     <form id="configForm4" class="card-container">
         <div class="section">
 
-            <h3>🔹 Monitor EC2 Instances</h3>
+            <h3>🧭 Monitor EC2 Instances</h3>
 
             <!-- Enable EC2 Monitoring -->
             <div class="form-group">
@@ -748,7 +748,6 @@
             }
 
             const data = await response.json();
-            console.log('Received data:', data); // Debug log
 
             if (data.success && data.instances) {
                 updateInstanceList(data.instances);
