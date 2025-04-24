@@ -9,7 +9,7 @@ import boto3
 from botocore.exceptions import ClientError
 from werkzeug.utils import secure_filename
 
-UPLOAD_FOLDER = '/opt/observability/EKS/'  # or another secure location
+UPLOAD_FOLDER = '/opt/observability/EKS/PEM_FILES'  # or another secure location
 ALLOWED_EXTENSIONS = {'pem'}
 
 app = Flask(__name__)
