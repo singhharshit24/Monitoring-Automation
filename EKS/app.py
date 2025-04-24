@@ -62,11 +62,15 @@ def write_variables(updated_vars, var_file):
             if line.strip() and not line.startswith("#"):  # Ignore empty and comment lines
                 key = line.split("=")[0].strip()
                 if key in updated_vars:
-                    file.write(f'{key}="{updated_vars[key]}"\n')  # Write updated value
+                    # Handle array variables
+                    if key in ['EC2_INSTANCES', 'EC2_INSTANCE_IDS', 'EC2_INSTANCE_NAMES', 'EC2_PEM_FILES']:
+                        file.write(f'{key}={updated_vars[key]}\n')  # Arrays are already formatted
+                    else:
+                        file.write(f'{key}="{updated_vars[key]}"\n')
                 else:
-                    file.write(line)  # Keep existing line if not updated
+                    file.write(line)
             else:
-                file.write(line)  # Keep comments and empty lines
+                file.write(line)
 
 def run_setup(script_file):
     try:
@@ -245,26 +249,42 @@ def deploy():
                     instance_details[instance_id] = {'pem_path': filepath}
         
         # Parse form data for EC2 instances
-        for key in request.form:
-            if key.startswith('EC2_SELECTION'):
-                instance_id = request.form.get(f'EC2_ID_{len(selected_instances)}')
-                selected_instances.append(request.form[key])  # IP address
-                instance_ids.append(instance_id)
-                instance_names.append(request.form.get(f'EC2_NAME_{len(selected_instances)}'))
+        instance_count = 0
+        while True:
+            selection_key = f'EC2_SELECTION_{instance_count}'
+            id_key = f'EC2_ID_{instance_count}'
+            name_key = f'EC2_NAME_{instance_count}'
+            
+            if selection_key not in request.form:
+                break
                 
-                # Add PEM file path if it exists for this instance
-                if instance_id in instance_details:
-                    pem_file_paths.append(instance_details[instance_id]['pem_path'])
-                else:
-                    pem_file_paths.append('')
+            selected_instances.append(request.form[selection_key])
+            instance_ids.append(request.form[id_key])
+            instance_names.append(request.form[name_key])
+            
+            # Add PEM file path if it exists for this instance
+            if request.form[id_key] in instance_details:
+                pem_file_paths.append(instance_details[request.form[id_key]]['pem_path'])
+            else:
+                pem_file_paths.append('')
+                
+            instance_count += 1
+
 
         # Update variables dictionary
         updated_vars = {key: request.form[key] for key in request.form}
-        updated_vars['EC2_INSTANCES'] = "(" + " ".join(selected_instances) + ")"
-        updated_vars['EC2_INSTANCE_IDS'] = "(" + " ".join(instance_ids) + ")"
-        updated_vars['EC2_INSTANCE_NAMES'] = "(" + " ".join(instance_names) + ")"
-        updated_vars['EC2_PEM_FILES'] = "(" + " ".join(pem_file_paths) + ")"
-        updated_vars['EC2_INSTANCE_COUNT'] = str(len(selected_instances))
+        # Format arrays for variables.sh
+        updated_vars['EC2_INSTANCES'] = "(" + " ".join([f'"{ip}"' for ip in selected_instances]) + ")"
+        updated_vars['EC2_INSTANCE_IDS'] = "(" + " ".join([f'"{id}"' for id in instance_ids]) + ")"
+        updated_vars['EC2_INSTANCE_NAMES'] = "(" + " ".join([f'"{name}"' for name in instance_names]) + ")"
+        updated_vars['EC2_PEM_FILES'] = "(" + " ".join([f'"{path}"' for path in pem_file_paths]) + ")"
+        updated_vars['EC2_INSTANCE_COUNT'] = str(instance_count)
+        
+        # Debug logging
+        app.logger.debug(f"Selected instances: {selected_instances}")
+        app.logger.debug(f"Instance IDs: {instance_ids}")
+        app.logger.debug(f"Instance names: {instance_names}")
+        app.logger.debug(f"PEM file paths: {pem_file_paths}")
         
         write_variables(updated_vars, VARIABLES_FILE)
 

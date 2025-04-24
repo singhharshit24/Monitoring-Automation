@@ -985,6 +985,7 @@
                 const instanceIp = checkbox.value;
                 const instanceName = checkbox.closest('tr').querySelector('td:nth-child(2)').textContent;
 
+                // Append with index to maintain order
                 formData.append(`EC2_SELECTION_${index}`, instanceIp);
                 formData.append(`EC2_ID_${index}`, instanceId);
                 formData.append(`EC2_NAME_${index}`, instanceName);
@@ -996,6 +997,14 @@
                 }
             });
 
+            // Add EC2 monitoring enabled flag
+            formData.append('ENABLE_EC2_MONITORING',
+                document.getElementById('ENABLE_EC2_MONITORING').value === "1" ? "yes" : "no");
+
+            // Debug log
+            for (let pair of formData.entries()) {
+                console.log(pair[0] + ': ' + pair[1]);
+            }
             // Setup EventSource for progress updates
             const eventSource = new EventSource('/deployment-progress');
 
