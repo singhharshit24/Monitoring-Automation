@@ -710,7 +710,7 @@
 {% block scripts %}
 <script>
     document.getElementById("EC2_REGION").addEventListener('change', function () {
-        if (document.getElementById("ENABLE_EC2_MONITORING").value === "1") {
+        if (document.getElementById("ENABLE_EC2_MONITORING").value === "yes") {
             fetchRunningInstances();
         }
     });
@@ -888,7 +888,7 @@
 
     // Add event listener for region change
     document.getElementById("EC2_REGION").addEventListener('change', function () {
-        if (document.getElementById("ENABLE_EC2_MONITORING").value === "1") {
+        if (document.getElementById("ENABLE_EC2_MONITORING").value === "yes") {
             fetchRunningInstances();
         }
     });
@@ -999,7 +999,7 @@
 
             // Add EC2 monitoring enabled flag
             formData.append('ENABLE_EC2_MONITORING',
-                document.getElementById('ENABLE_EC2_MONITORING').value === "1" ? "yes" : "no");
+                document.getElementById('ENABLE_EC2_MONITORING').value === "yes" ? "yes" : "no");
 
             // Debug log
             for (let pair of formData.entries()) {
