@@ -1257,7 +1257,7 @@ EOF
 }
 
 monitor_ec2() {
-  if [[ "$ENABLE_EC2_MONITORING" != "yes" ]]; then
+  if [[ "$ENABLE_EC2_MONITORING" != "1" ]]; then
         echo "❌ Skipping EC2 monitoring setup."
         return 0
     fi
