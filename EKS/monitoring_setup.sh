@@ -33,6 +33,8 @@ PROMETHEUS_STORAGE_CLASS=""
 GRAFANA_SERVICE="prometheus-stack-grafana"
 PROMETHEUS_SERVICE="prometheus-stack-kube-prom-prometheus"
 
+NODE_EXPORTER_DOWNLOAD_URL="https://github.com/prometheus/node_exporter/releases/download/v${NODE_EXPORTER_VERSION}/node_exporter-${NODE_EXPORTER_VERSION}.linux-amd64.tar.gz"
+
 command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
@@ -1452,6 +1454,9 @@ main (){
   configure_grafana_storage
   configure_prometheus_storage
   check_and_add_helm_repo
+  if [[ "$ENABLE_EC2_MONITORING" == "1" ]]; then
+    monitor_ec2
+  fi
   deploy_prometheus
   patch_service
   echo "** Setup completed! **"

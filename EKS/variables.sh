@@ -108,6 +108,5 @@ NODE_EXPORTER_PORT="9100"      # Port for Node Exporter metrics
 # EC2 Monitoring Configuration
 ENABLE_EC2_MONITORING=""  # Flag to indicate if EC2 monitoring is enabled
 EC2_REGION=""
-NODE_EXPORTER_DOWNLOAD_URL="https://github.com/prometheus/node_exporter/releases/download/v${NODE_EXPORTER_VERSION}/node_exporter-${NODE_EXPORTER_VERSION}.linux-amd64.tar.gz"
 
 # *********************************
