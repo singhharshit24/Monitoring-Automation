@@ -1260,6 +1260,18 @@ EOF
 
 monitor_ec2() {
   echo "Starting EC2 monitoring setup..."
+
+  SCRAPE_CONFIG=$(cat &lt;&lt;EOF
+prometheus:
+  prometheusSpec:
+    additionalScrapeConfigs:
+      - job_name: 'ec2-nodes'
+        static_configs:
+          - targets: ${EC2_INSTANCES[@]/#/[\'}/9100${EC2_INSTANCES[@]/%/\']}
+            labels:
+              environment: production
+EOF
+  )
   
   # Loop through the EC2 instances
   for i in "${!EC2_INSTANCES[@]}"; do
@@ -1343,6 +1355,76 @@ EOF
     done
 }
 
+verify_prometheus_targets() {
+    echo "Verifying Prometheus targets..."
+    
+    # Get Prometheus service endpoint
+    PROM_ENDPOINT=$(kubectl get svc -n $NAMESPACE prometheus-stack-kube-prom-prometheus -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+    
+    # Check targets status
+    curl -s "http://$PROM_ENDPOINT:9090/api/v1/targets" | jq '.data.activeTargets[] | select(.labels.job=="ec2-nodes")'
+}
+
+install_node_exporter_dashboard() {
+    echo "Installing Node Exporter dashboard..."
+    
+    # Get Grafana admin password
+    GRAFANA_PASSWORD=$(kubectl get secret -n $NAMESPACE prometheus-stack-grafana -o jsonpath="{.data.admin-password}" | base64 --decode)
+    
+    # Get Grafana endpoint
+    GRAFANA_ENDPOINT=$(kubectl get svc -n $NAMESPACE prometheus-stack-grafana -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+    
+    # Import Node Exporter dashboard
+    curl -X POST \
+      -H "Content-Type: application/json" \
+      -u "admin:$GRAFANA_PASSWORD" \
+      "http://$GRAFANA_ENDPOINT/api/dashboards/import" \
+      -d '{
+        "dashboard": {
+          "id": null,
+          "uid": "node-exporter",
+          "title": "Node Exporter Metrics",
+          "timezone": "browser",
+          "schemaVersion": 16,
+          "version": 0,
+          "refresh": "30s",
+          "panels": [
+            {
+              "title": "CPU Usage",
+              "type": "graph",
+              "datasource": "Prometheus",
+              "targets": [
+                {
+                  "expr": "100 - (avg by (instance) (irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+                  "legendFormat": "{{instance}}"
+                }
+              ]
+            },
+            {
+              "title": "Memory Usage",
+              "type": "graph",
+              "datasource": "Prometheus",
+              "targets": [
+                {
+                  "expr": "100 * (1 - ((node_memory_MemFree_bytes + node_memory_Cached_bytes + node_memory_Buffers_bytes) / node_memory_MemTotal_bytes))",
+                  "legendFormat": "{{instance}}"
+                }
+              ]
+            }
+          ]
+        },
+        "inputs": [
+          {
+            "name": "DS_PROMETHEUS",
+            "type": "datasource",
+            "pluginId": "prometheus",
+            "value": "Prometheus"
+          }
+        ],
+        "overwrite": true
+      }'
+}
+
 check_and_add_helm_repo() {
   local repos=(
     "prometheus-community|https://prometheus-community.github.io/helm-charts"
@@ -1382,6 +1464,7 @@ deploy_prometheus() {
 $NODE_PLACEMENT_CONFIG
 $STORAGE_CLASS
 $PROMETHEUS_STORAGE_CLASS
+$SCRAPE_CONFIG
 EOF
 }
 
@@ -1426,6 +1509,8 @@ main (){
   fi
   deploy_prometheus
   patch_service
+  verify_prometheus_targets
+  install_node_exporter_dashboard
   echo "** Setup completed! **"
 }
 
