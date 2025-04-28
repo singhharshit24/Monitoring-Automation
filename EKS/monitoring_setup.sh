@@ -1261,7 +1261,7 @@ EOF
 monitor_ec2() {
   echo "Starting EC2 monitoring setup..."
 
-  SCRAPE_CONFIG=$(cat &lt;&lt;EOF
+  SCRAPE_CONFIG=$(cat <<EOF
 prometheus:
   prometheusSpec:
     additionalScrapeConfigs:
