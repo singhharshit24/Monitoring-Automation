@@ -1277,14 +1277,22 @@ monitor_ec2() {
 
   # Create the full Prometheus configuration
   PROMETHEUS_EC2_CONFIG=$(cat <<EOF
-prometheus:
-  prometheusSpec:
-    additionalScrapeConfigs:
-      - job_name: 'ec2-nodes'
-        static_configs:
+- job_name: 'ec2-nodes'
+  static_configs:
 ${SCRAPE_CONFIG}
 EOF
 )
+
+  # Save config to file
+  echo "$PROMETHEUS_EC2_CONFIG" > prometheus-additional.yaml
+
+  # Create or update the Kubernetes secret
+  kubectl delete secret additional-scrape-configs -n "$NAMESPACE" --ignore-not-found
+  kubectl create secret generic additional-scrape-configs \
+    --from-file=prometheus-additional.yaml=prometheus-additional.yaml \
+    -n "$NAMESPACE"
+
+  echo "✅ Prometheus additional scrape config secret created."
   
   # Loop through the EC2 instances
   for i in "${!EC2_INSTANCES[@]}"; do
@@ -1366,6 +1374,18 @@ EOF
             echo "Failed to install Node Exporter on ${INSTANCE_IP}"
         fi
     done
+  
+  echo "🔁 Patching Prometheus to use EC2 scrape targets..."
+
+  PROMETHEUS_EC2_CONFIG=$(cat <<EOF
+prometheus:
+  prometheusSpec:
+    additionalScrapeConfigs:
+      name: additional-scrape-configs
+      key: prometheus-additional.yaml
+${SCRAPE_CONFIG}
+EOF
+)
 }
 
 check_and_add_helm_repo() {
