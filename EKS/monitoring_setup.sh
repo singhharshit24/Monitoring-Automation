@@ -1270,9 +1270,9 @@ monitor_ec2() {
       
       # Add to scrape config
       SCRAPE_CONFIG="${SCRAPE_CONFIG}
-          - targets: ['${INSTANCE_IP}:9100']
-            labels:
-              instance: '${INSTANCE_NAME}'"
+    - targets: ['${INSTANCE_IP}:9100']
+      labels:
+        instance: '${INSTANCE_NAME}'"
   done
 
   # Create the full Prometheus configuration
