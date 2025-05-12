@@ -1269,7 +1269,8 @@ monitor_ec2() {
       INSTANCE_NAME="${EC2_INSTANCE_NAMES[$i]}"
       
       # Add to scrape config
-      SCRAPE_CONFIG="${SCRAPE_CONFIG}    - targets: ['${INSTANCE_IP}:9100']
+      SCRAPE_CONFIG="${SCRAPE_CONFIG}
+    - targets: ['${INSTANCE_IP}:9100']
       labels:
         instance: '${INSTANCE_NAME}'"
   done
@@ -1382,7 +1383,6 @@ prometheus:
     additionalScrapeConfigs:
       name: additional-scrape-configs
       key: prometheus-additional.yaml
-${SCRAPE_CONFIG}
 EOF
 )
 }
