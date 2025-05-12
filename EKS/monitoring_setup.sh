@@ -1380,9 +1380,11 @@ EOF
   PROMETHEUS_EC2_CONFIG=$(cat <<EOF
 prometheus:
   prometheusSpec:
-    additionalScrapeConfigs:
+    additionalScrapeConfigsSecret:
+      enabled: true
       name: additional-scrape-configs
       key: prometheus-additional.yaml
+${SCRAPE_CONFIG}
 EOF
 )
 }
