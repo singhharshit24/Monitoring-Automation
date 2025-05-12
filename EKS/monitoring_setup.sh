@@ -1384,7 +1384,6 @@ prometheus:
       enabled: true
       name: additional-scrape-configs
       key: prometheus-additional.yaml
-${SCRAPE_CONFIG}
 EOF
 )
 }
