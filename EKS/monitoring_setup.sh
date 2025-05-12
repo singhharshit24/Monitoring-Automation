@@ -1265,20 +1265,20 @@ monitor_ec2() {
   
   # Build the scrape configuration
   for i in "${!EC2_INSTANCES[@]}"; do
-  INSTANCE_IP="${EC2_INSTANCES[$i]}"
-  INSTANCE_NAME="${EC2_INSTANCE_NAMES[$i]}"
-  
-  # Add to scrape config
-  SCRAPE_CONFIG="${SCRAPE_CONFIG}
-    - targets: ['${INSTANCE_IP}:9100']
+      INSTANCE_IP="${EC2_INSTANCES[$i]}"
+      INSTANCE_NAME="${EC2_INSTANCE_NAMES[$i]}"
+      
+      # Add to scrape config
+      SCRAPE_CONFIG="${SCRAPE_CONFIG}    - targets: ['${INSTANCE_IP}:9100']
       labels:
         instance: '${INSTANCE_NAME}'"
-done
+  done
 
   # Create the full Prometheus configuration
-PROMETHEUS_EC2_CONFIG=$(cat <<EOF
+  PROMETHEUS_EC2_CONFIG=$(cat <<EOF
 - job_name: 'ec2-nodes'
-  static_configs:${SCRAPE_CONFIG}
+  static_configs:
+${SCRAPE_CONFIG}
 EOF
 )
 
